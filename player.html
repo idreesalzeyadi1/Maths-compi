@@ -150,7 +150,6 @@
     padding: 0;
   }
 
-  /* Team header bar */
   .team-bar {
     width: 100%;
     padding: 14px 20px;
@@ -162,163 +161,63 @@
   .team-bar.blue { background: linear-gradient(135deg, #1a73e8, #0d47a1); }
   .team-bar.red { background: linear-gradient(135deg, #e53935, #b71c1c); }
 
-  /* Timer */
-  .timer-ring-wrap {
-    margin-top: 20px;
-    position: relative;
-    width: 90px; height: 90px;
-  }
-  .timer-svg {
-    width: 90px; height: 90px;
-    transform: rotate(-90deg);
-  }
+  /* Timer, Question, Keypad styles (same as before) */
+  .timer-ring-wrap { margin-top: 20px; position: relative; width: 90px; height: 90px; }
+  .timer-svg { width: 90px; height: 90px; transform: rotate(-90deg); }
   .timer-bg { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 6; }
   .timer-arc { fill: none; stroke: var(--gold); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 0.3s; }
   .timer-num {
-    position: absolute;
-    inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Bangers', cursive;
-    font-size: 32px;
-    color: var(--gold);
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-family: 'Bangers', cursive; font-size: 32px; color: var(--gold);
   }
 
-  /* ROUND label */
-  .round-label {
-    font-size: 14px;
-    color: #888;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-top: 12px;
-  }
+  .round-label { font-size: 14px; color: #888; letter-spacing: 2px; text-transform: uppercase; margin-top: 12px; }
 
-  /* QUESTION BOX */
   .question-box {
-    margin: 20px;
-    background: rgba(255,255,255,0.07);
-    border: 2px solid rgba(255,255,255,0.15);
-    border-radius: 20px;
-    padding: 28px 24px;
-    text-align: center;
-    width: calc(100% - 40px);
-    max-width: 380px;
+    margin: 20px; background: rgba(255,255,255,0.07); border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 20px; padding: 28px 24px; text-align: center; width: calc(100% - 40px); max-width: 380px;
   }
-  .question-box .q-label { font-size: 13px; color: #888; letter-spacing: 2px; margin-bottom: 12px; }
-  .question-big {
-    font-family: 'Bangers', cursive;
-    font-size: clamp(42px, 14vw, 72px);
-    letter-spacing: 2px;
-    color: #fff;
-    text-shadow: 0 0 30px rgba(255,255,255,0.2);
-  }
+  .question-big { font-family: 'Bangers', cursive; font-size: clamp(42px, 14vw, 72px); letter-spacing: 2px; color: #fff; }
 
-  /* KEYPAD */
-  .keypad-wrap {
-    width: 100%;
-    max-width: 380px;
-    padding: 0 20px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
+  .keypad-wrap { width: 100%; max-width: 380px; padding: 0 20px 20px; display: flex; flex-direction: column; gap: 12px; }
   .answer-display {
-    background: rgba(255,255,255,0.07);
-    border: 2px solid rgba(255,255,255,0.2);
-    border-radius: 16px;
-    padding: 14px 20px;
-    text-align: center;
-    font-family: 'Bangers', cursive;
-    font-size: 40px;
-    letter-spacing: 4px;
-    min-height: 72px;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: rgba(255,255,255,0.07); border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 16px; padding: 14px 20px; text-align: center;
+    font-family: 'Bangers', cursive; font-size: 40px; letter-spacing: 4px;
+    min-height: 72px; color: #fff; display: flex; align-items: center; justify-content: center;
   }
   .answer-display.has-val { border-color: var(--gold); }
   .answer-display.correct { border-color: #4caf50; background: rgba(76,175,80,0.15); color: #4caf50; }
   .answer-display.wrong { border-color: #f44336; background: rgba(244,67,54,0.15); color: #f44336; }
 
-  .keypad {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-  }
-
+  .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .key {
-    aspect-ratio: 1;
-    border-radius: 14px;
-    border: 2px solid rgba(255,255,255,0.12);
-    background: rgba(255,255,255,0.07);
-    color: #fff;
-    font-family: 'Bangers', cursive;
-    font-size: 28px;
-    cursor: pointer;
-    transition: transform 0.08s, background 0.1s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    user-select: none;
+    aspect-ratio: 1; border-radius: 14px; border: 2px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.07); color: #fff; font-family: 'Bangers', cursive;
+    font-size: 28px; cursor: pointer; transition: transform 0.08s, background 0.1s;
+    display: flex; align-items: center; justify-content: center; user-select: none;
   }
   .key:active { transform: scale(0.9); background: rgba(255,255,255,0.15); }
   .key.del { font-size: 22px; }
   .key.zero { grid-column: 1; }
 
   .submit-btn {
-    padding: 18px;
-    border-radius: 16px;
-    border: none;
-    font-family: 'Bangers', cursive;
-    font-size: 28px;
-    letter-spacing: 2px;
-    cursor: pointer;
-    width: 100%;
-    color: #0d0d2b;
+    padding: 18px; border-radius: 16px; border: none; font-family: 'Bangers', cursive;
+    font-size: 28px; letter-spacing: 2px; cursor: pointer; width: 100%; color: #0d0d2b;
     transition: transform 0.08s;
   }
-  .submit-btn:active { transform: scale(0.97); }
-  .submit-btn.blue { background: linear-gradient(135deg, #FFD600, #ff8f00); }
-  .submit-btn.red { background: linear-gradient(135deg, #FFD600, #ff8f00); }
   .submit-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
 
-  /* FEEDBACK overlays */
   .feedback-overlay {
-    position: fixed;
-    inset: 0;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 16px;
-    font-family: 'Bangers', cursive;
-    font-size: 80px;
-    z-index: 50;
-    background: rgba(0,0,0,0.5);
-    backdrop-filter: blur(4px);
+    position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px; font-family: 'Bangers', cursive; font-size: 80px;
+    z-index: 50; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
   }
   .feedback-overlay p { font-size: 28px; letter-spacing: 2px; }
 
-  /* WAITING FOR NEXT */
-  #nextRoundMsg {
-    display: none;
-    text-align: center;
-    padding: 20px;
-    font-size: 18px;
-    color: #aaa;
-    animation: fadeIn 0.3s;
-  }
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
   .error-msg {
-    background: rgba(229,57,53,0.2);
-    border: 1px solid var(--red);
-    border-radius: 10px;
-    padding: 10px 14px;
-    font-size: 14px;
-    color: #ef9a9a;
-    text-align: center;
+    background: rgba(229,57,53,0.2); border: 1px solid var(--red); border-radius: 10px;
+    padding: 10px 14px; font-size: 14px; color: #ef9a9a; text-align: center;
   }
 </style>
 </head>
@@ -353,10 +252,6 @@
     <div id="joinError" style="display:none" class="error-msg"></div>
     <button class="btn btn-gold" onclick="joinGame()">⚡ JOIN GAME</button>
   </div>
-
-  <div style="font-size:12px;color:#555;text-align:center;max-width:300px">
-    Get the Room ID from your teacher's projector screen
-  </div>
 </div>
 
 <!-- WAITING SCREEN -->
@@ -374,8 +269,7 @@
   <div class="timer-ring-wrap">
     <svg class="timer-svg" viewBox="0 0 90 90">
       <circle class="timer-bg" cx="45" cy="45" r="39"/>
-      <circle class="timer-arc" id="timerArc" cx="45" cy="45" r="39"
-        stroke-dasharray="245" stroke-dashoffset="0"/>
+      <circle class="timer-arc" id="timerArc" cx="45" cy="45" r="39" stroke-dasharray="245" stroke-dashoffset="0"/>
     </svg>
     <div class="timer-num" id="timerNum">15</div>
   </div>
@@ -405,19 +299,23 @@
     </div>
 
     <button class="submit-btn blue" id="submitBtn" onclick="submitAnswer()">✅ SUBMIT ANSWER</button>
-    <div id="nextRoundMsg">⏳ Waiting for next round...</div>
+    <div id="nextRoundMsg" style="display:none;text-align:center;padding:20px;font-size:18px;color:#aaa;">⏳ Waiting for next round...</div>
   </div>
 </div>
 
 <!-- Feedback overlays -->
-<div class="feedback-overlay" id="correctOverlay" style="color:#4caf50">
-  ✅<p>CORRECT!</p>
-</div>
-<div class="feedback-overlay" id="wrongOverlay" style="color:#f44336">
-  ❌<p>WRONG!</p>
-</div>
+<div class="feedback-overlay" id="correctOverlay" style="color:#4caf50">✅<p>CORRECT!</p></div>
+<div class="feedback-overlay" id="wrongOverlay" style="color:#f44336">❌<p>WRONG!</p></div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
 <script>
+const FIREBASE_URL = 'https://maths-compi-default-rtdb.asia-southeast1.firebaseio.com';
+firebase.initializeApp({ databaseURL: FIREBASE_URL });
+const db = firebase.database();
+
 let playerState = {
   roomId: '',
   name: '',
@@ -434,7 +332,7 @@ let timerInterval = null;
 let pollInterval = null;
 let lastRoundTs = 0;
 
-// ===== JOIN =====
+// ===== JOIN GAME =====
 function joinGame() {
   const roomId = document.getElementById('roomInput').value.trim().toUpperCase();
   const name = document.getElementById('nameInput').value.trim();
@@ -449,30 +347,36 @@ function joinGame() {
     return;
   }
 
-  // Check if room exists
-  const roomData = localStorage.getItem('tow_room_' + roomId);
-  if (!roomData) {
-    showError('Room not found! Check the ID on the projector screen.');
-    return;
-  }
+  const roomRef = db.ref('rooms/' + roomId);
 
-  const room = JSON.parse(roomData);
-  playerState.roomId = roomId;
-  playerState.name = name;
-  playerState.team = team;
-  playerState.teamColor = team === 1 ? 'blue' : 'red';
-  playerState.questionTime = room.questionTime || 15;
+  roomRef.child('config').once('value', (snap) => {
+    if (!snap.exists()) {
+      showError('Room not found! Check the ID on the projector screen.');
+      return;
+    }
 
-  // Signal join
-  localStorage.setItem('tow_join_' + roomId, JSON.stringify({ team, name, ts: Date.now() }));
+    const config = snap.val();
 
-  // Switch to waiting / directly try to load round
-  document.getElementById('joinScreen').style.display = 'none';
-  document.getElementById('waitingScreen').style.display = 'flex';
-  document.getElementById('waitRoomId').textContent = 'Room: ' + roomId;
+    playerState.roomId = roomId;
+    playerState.name = name;
+    playerState.team = team;
+    playerState.teamColor = team === 1 ? 'blue' : 'red';
+    playerState.questionTime = config.questionTime || 15;
 
-  // Start polling for round data
-  pollInterval = setInterval(checkForNewRound, 400);
+    // Join karo
+    const teamKey = team === 1 ? 't1players' : 't2players';
+    roomRef.child('teams').child(teamKey).push(name);
+    roomRef.child('teams').child(team === 1 ? 't1' : 't2').set(true);
+
+    // Switch screen
+    document.getElementById('joinScreen').style.display = 'none';
+    document.getElementById('waitingScreen').style.display = 'flex';
+    document.getElementById('waitRoomId').textContent = 'Room: ' + roomId;
+
+    pollInterval = setInterval(checkForNewRound, 500);
+  }).catch(() => {
+    showError('Room not found or connection error!');
+  });
 }
 
 function showError(msg) {
@@ -481,21 +385,22 @@ function showError(msg) {
   el.style.display = 'block';
 }
 
-// ===== POLL FOR NEW ROUND =====
+// ===== CHECK FOR NEW ROUND =====
 function checkForNewRound() {
-  const raw = localStorage.getItem('tow_round_' + playerState.roomId);
-  if (!raw) return;
+  if (!playerState.roomId) return;
 
-  try {
-    const data = JSON.parse(raw);
-    if (data.ts === lastRoundTs) return; // same round
+  db.ref('rooms/' + playerState.roomId + '/round').once('value', (snap) => {
+    const data = snap.val();
+    if (!data) return;
+    if (data.ts === lastRoundTs) return;
+
     lastRoundTs = data.ts;
 
     if (data.round !== playerState.currentRound) {
       playerState.currentRound = data.round;
       loadRound(data);
     }
-  } catch(e) {}
+  });
 }
 
 function loadRound(data) {
@@ -507,14 +412,9 @@ function loadRound(data) {
   playerState.submitted = false;
   playerState.currentAnswer = '';
 
-  // Clear old answer from LS
-  localStorage.removeItem('tow_answer_' + playerState.roomId + '_' + playerState.team);
-
-  // Show game screen
   document.getElementById('waitingScreen').style.display = 'none';
   document.getElementById('gameScreen').style.display = 'flex';
 
-  // Team bar
   const bar = document.getElementById('teamBar');
   const teamName = playerState.team === 1 ? (data.team1 || 'Team Blue') : (data.team2 || 'Team Red');
   bar.textContent = (playerState.team === 1 ? '💙 ' : '❤️ ') + teamName.toUpperCase();
@@ -531,15 +431,12 @@ function loadRound(data) {
   btn.textContent = '✅ SUBMIT ANSWER';
 
   document.getElementById('nextRoundMsg').style.display = 'none';
-
-  // Re-enable keypad
   document.querySelectorAll('.key').forEach(k => k.style.pointerEvents = '');
 
-  // Start timer
   startTimer(data.time || playerState.questionTime);
 }
 
-// ===== TIMER =====
+// Timer, Keypad, Submit functions (same as before)
 function startTimer(seconds) {
   clearInterval(timerInterval);
   let remaining = seconds;
@@ -566,14 +463,11 @@ function startTimer(seconds) {
     update();
     if (remaining <= 0) {
       clearInterval(timerInterval);
-      if (!playerState.submitted) {
-        autoSubmit();
-      }
+      if (!playerState.submitted) autoSubmit();
     }
   }, 1000);
 }
 
-// ===== KEYPAD =====
 function pressKey(digit) {
   if (playerState.submitted) return;
   if (playerState.currentAnswer.length >= 6) return;
@@ -593,17 +487,13 @@ function updateAnswerDisplay() {
   el.className = 'answer-display' + (playerState.currentAnswer ? ' has-val' : '');
 }
 
-// ===== SUBMIT =====
 function submitAnswer() {
-  if (playerState.submitted) return;
-  if (!playerState.currentAnswer) return;
-
+  if (playerState.submitted || !playerState.currentAnswer) return;
   clearInterval(timerInterval);
   playerState.submitted = true;
 
   const userAns = parseInt(playerState.currentAnswer);
   const correct = userAns === playerState.correctAns;
-
   sendAnswer(correct, userAns);
   showFeedback(correct);
 }
@@ -625,14 +515,9 @@ function sendAnswer(correct, value) {
     round: playerState.currentRound,
     ts: Date.now(),
   };
-  // Write to localStorage for spectator to pick up
-  localStorage.setItem('tow_answer_' + playerState.roomId + '_' + playerState.team, JSON.stringify(payload));
-  // Also via BroadcastChannel
-  try {
-    const ch = new BroadcastChannel('tug_of_war_' + playerState.roomId);
-    ch.postMessage({ type: 'ANSWER', payload, roomId: playerState.roomId });
-    ch.close();
-  } catch(e) {}
+
+  const teamKey = playerState.team === 1 ? 't1' : 't2';
+  db.ref('rooms/' + playerState.roomId + '/answers/' + teamKey).set(payload);
 }
 
 function showFeedback(correct) {
@@ -647,7 +532,7 @@ function showFeedback(correct) {
 
     const overlay = document.getElementById('correctOverlay');
     overlay.style.display = 'flex';
-    setTimeout(() => { overlay.style.display = 'none'; }, 1500);
+    setTimeout(() => overlay.style.display = 'none', 1500);
   } else {
     ansEl.className = 'answer-display wrong';
     ansEl.textContent = '❌ ' + (playerState.currentAnswer || '?');
@@ -656,7 +541,7 @@ function showFeedback(correct) {
 
     const overlay = document.getElementById('wrongOverlay');
     overlay.style.display = 'flex';
-    setTimeout(() => { overlay.style.display = 'none'; }, 1500);
+    setTimeout(() => overlay.style.display = 'none', 1500);
   }
 
   btn.disabled = true;
