@@ -1,453 +1,289 @@
-<script>
-// ===== DEBUG =====
-function log(msg, color = '#0f0') {
-  console.log(msg);
-
-  const p = document.getElementById('debugPanel');
-  p.classList.add('visible');
-
-  const line = document.createElement('div');
-  line.style.color = color;
-  line.textContent =
-    new Date().toLocaleTimeString() + ' → ' + msg;
-
-  p.appendChild(line);
-  p.scrollTop = p.scrollHeight;
-}
-
-// ===== FIREBASE CONFIG =====
-const firebaseConfig = {
-    apiKey: "AIzaSyA8HVAmKLpv6YshzqN6boiLjDJ3MEDov3Y",
-    authDomain: "maths-compi.firebaseapp.com",
-    databaseURL: "https://maths-compi-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "maths-compi",
-    storageBucket: "maths-compi.firebasestorage.app",
-    messagingSenderId: "570914604597",
-    appId: "1:570914604597:web:96df45271bc58ef29d137c"
-  };
-
-// ===== FIREBASE INIT =====
-let firebaseReady = false;
-
-try {
-
-  if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-  }
-
-  firebaseReady = true;
-
-  log('Firebase Connected ✅');
-
-} catch (e) {
-
-  log(
-    'Firebase Init Failed: ' + e.message,
-    '#f44336'
-  );
-
-}
-
-const db = firebase.database();
-
-// ===== GLOBAL STATE =====
-let currentRoom = '';
-let currentPlayer = '';
-let currentTeam = '1';
-
-// ===== STATUS MESSAGE =====
-function showStatus(message, type = 'error') {
-
-  const status =
-    document.getElementById('statusMsg');
-
-  status.style.display = 'block';
-  status.innerText = message;
-
-  status.className =
-    type === 'error'
-      ? 'error-msg'
-      : 'success-msg';
-}
-
-// ===== JOIN GAME =====
-function joinGame() {
-
-  log('JOIN button clicked');
-
-  // Inputs
-  const roomId =
-    document
-      .getElementById('roomInput')
-      .value
-      .trim()
-      .toUpperCase();
-
-  const playerName =
-    document
-      .getElementById('nameInput')
-      .value
-      .trim();
-
-  const team =
-    document
-      .getElementById('teamSelect')
-      .value;
-
-  // Validation
-  if (!roomId) {
-
-    showStatus(
-      '❌ Enter Room ID'
-    );
-
-    return;
-  }
-
-  if (!playerName) {
-
-    showStatus(
-      '❌ Enter Your Name'
-    );
-
-    return;
-  }
-
-  if (!firebaseReady) {
-
-    showStatus(
-      '❌ Firebase not connected'
-    );
-
-    return;
-  }
-
-  currentRoom = roomId;
-  currentPlayer = playerName;
-  currentTeam = team;
-
-  log('Checking room: ' + roomId);
-
-  // ===== CHECK ROOM =====
-  db.ref('rooms/' + roomId)
-    .once('value')
-
-    .then(snapshot => {
-
-      if (!snapshot.exists()) {
-
-        log(
-          'Room NOT FOUND ❌',
-          '#f44336'
-        );
-
-        showStatus(
-          '❌ Room Not Found'
-        );
-
-        throw new Error('Room not found');
-      }
-
-      log('Room Found ✅');
-
-      // ===== CREATE PLAYER =====
-      const playerId =
-        'player_' + Date.now();
-
-      const playerData = {
-        id: playerId,
-        name: playerName,
-        team: team,
-        joinedAt: Date.now(),
-        online: true
-      };
-
-      return db
-        .ref(
-          'rooms/' +
-          roomId +
-          '/players/' +
-          playerId
-        )
-        .set(playerData);
-
-    })
-
-    .then(() => {
-
-      log(
-        'Player Joined Successfully ✅'
-      );
-
-      showStatus(
-        '✅ Joined Successfully',
-        'success'
-      );
-
-      // ===== SHOW WAITING SCREEN =====
-      document
-        .getElementById('joinScreen')
-        .style.display = 'none';
-
-      document
-        .getElementById('waitingScreen')
-        .style.display = 'flex';
-
-      document
-        .getElementById('waitRoomInfo')
-        .innerHTML =
-        `
-        Room: <b>${currentRoom}</b><br>
-        Team:
-        <b>
-        ${
-          currentTeam === '1'
-            ? '💙 BLUE'
-            : '❤️ RED'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maths Compi</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: #0f0f1e;
+            color: white;
+            text-align: center;
         }
-        </b>
-        `;
-
-      listenForGameStart();
-
-    })
-
-    .catch(error => {
-
-      log(
-        'Error: ' + error.message,
-        '#f44336'
-      );
-
-    });
-
-}
-
-// ===== LISTEN FOR GAME START =====
-function listenForGameStart() {
-
-  log('Waiting for game start...');
-
-  db.ref(
-    'rooms/' +
-    currentRoom +
-    '/gameStarted'
-  )
-
-  .on('value', snapshot => {
-
-    const started = snapshot.val();
-
-    if (started === true) {
-
-      log('GAME STARTED 🚀');
-
-      document
-        .getElementById('waitingScreen')
-        .style.display = 'none';
-
-      document
-        .getElementById('gameScreen')
-        .style.display = 'flex';
-
-      // Team UI
-      const teamBar =
-        document.getElementById('teamBar');
-
-      if (currentTeam === '1') {
-
-        teamBar.innerHTML =
-          '💙 TEAM BLUE';
-
-        teamBar.className =
-          'team-bar blue';
-
-      } else {
-
-        teamBar.innerHTML =
-          '❤️ TEAM RED';
-
-        teamBar.className =
-          'team-bar red';
-
-      }
-
-      listenForQuestions();
-
-    }
-
-  });
-
-}
-
-// ===== QUESTION LISTENER =====
-function listenForQuestions() {
-
-  db.ref(
-    'rooms/' +
-    currentRoom +
-    '/currentQuestion'
-  )
-
-  .on('value', snapshot => {
-
-    const data = snapshot.val();
-
-    if (!data) return;
-
-    log('New Question Loaded');
-
-    document
-      .getElementById('questionText')
-      .innerText =
-      data.question || '—';
-
-  });
-
-}
-
-// ===== ANSWER INPUT =====
-let currentAnswer = '';
-
-function pressKey(num) {
-
-  if (currentAnswer.length >= 8)
-    return;
-
-  currentAnswer += num;
-
-  updateAnswerDisplay();
-}
-
-function deleteLast() {
-
-  currentAnswer =
-    currentAnswer.slice(0, -1);
-
-  updateAnswerDisplay();
-}
-
-function updateAnswerDisplay() {
-
-  const display =
-    document.getElementById(
-      'answerDisplay'
-    );
-
-  display.innerText =
-    currentAnswer || '_';
-
-  if (currentAnswer) {
-
-    display.classList.add('has-val');
-
-  } else {
-
-    display.classList.remove('has-val');
-
-  }
-
-}
-
-// ===== SUBMIT ANSWER =====
-function submitAnswer() {
-
-  if (!currentAnswer) return;
-
-  log(
-    'Submitting Answer: ' +
-    currentAnswer
-  );
-
-  const answerData = {
-    player: currentPlayer,
-    team: currentTeam,
-    answer: currentAnswer,
-    time: Date.now()
-  };
-
-  db.ref(
-    'rooms/' +
-    currentRoom +
-    '/answers'
-  )
-
-  .push(answerData)
-
-  .then(() => {
-
-    showCorrect();
-
-    currentAnswer = '';
-    updateAnswerDisplay();
-
-  })
-
-  .catch(err => {
-
-    log(
-      'Submit Failed: ' +
-      err.message,
-      '#f44336'
-    );
-
-  });
-
-}
-
-// ===== FEEDBACK =====
-function showCorrect() {
-
-  const overlay =
-    document.getElementById(
-      'correctOverlay'
-    );
-
-  overlay.style.display = 'flex';
-
-  setTimeout(() => {
-
-    overlay.style.display = 'none';
-
-  }, 1000);
-
-}
-
-function showWrong() {
-
-  const overlay =
-    document.getElementById(
-      'wrongOverlay'
-    );
-
-  overlay.style.display = 'flex';
-
-  setTimeout(() => {
-
-    overlay.style.display = 'none';
-
-  }, 1000);
-
-}
-
-// ===== ENTER KEY SUPPORT =====
-document
-  .getElementById('roomInput')
-  .addEventListener('keypress', e => {
-
-    if (e.key === 'Enter')
-      joinGame();
-
-  });
-
-document
-  .getElementById('nameInput')
-  .addEventListener('keypress', e => {
-
-    if (e.key === 'Enter')
-      joinGame();
-
-  });
-
-log('Player App Loaded 🚀');
-</script>
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        #joinScreen { display: flex; }
+
+        input, select, button {
+            margin: 10px;
+            padding: 12px 20px;
+            font-size: 18px;
+            border-radius: 8px;
+            border: none;
+        }
+        input, select { width: 280px; }
+        button {
+            background: #00ff88;
+            color: black;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .error-msg { color: #ff4444; margin: 10px; }
+        .success-msg { color: #00ff88; margin: 10px; }
+
+        #debugPanel {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.85);
+            padding: 10px;
+            border-radius: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            font-size: 13px;
+            display: none;
+            text-align: left;
+            z-index: 9999;
+            width: 380px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- JOIN SCREEN -->
+    <div id="joinScreen" class="screen">
+        <h1>Maths Compi</h1>
+        <h2>Join Room</h2>
+        
+        <input type="text" id="roomInput" placeholder="Room ID (e.g. ABC123)" maxlength="10">
+        <input type="text" id="nameInput" placeholder="Your Name">
+        
+        <select id="teamSelect">
+            <option value="1">Team Blue 💙</option>
+            <option value="2">Team Red ❤️</option>
+        </select>
+        
+        <button onclick="joinGame()">JOIN GAME</button>
+        
+        <div id="statusMsg"></div>
+    </div>
+
+    <!-- WAITING SCREEN -->
+    <div id="waitingScreen" class="screen">
+        <h2>Waiting for Game to Start...</h2>
+        <div id="waitRoomInfo" style="margin: 20px; font-size: 20px;"></div>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="gameScreen" class="screen">
+        <div id="teamBar" style="padding: 12px; font-size: 26px; font-weight: bold; width: 100%;"></div>
+        
+        <h2 id="questionText" style="margin: 30px; min-height: 100px;">Waiting for question...</h2>
+        
+        <div style="margin: 20px;">
+            <div id="answerDisplay" style="font-size: 52px; letter-spacing: 10px; min-height: 80px; border-bottom: 4px solid #00ff88;">
+                _
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 320px; margin: 20px auto;">
+            <button onclick="pressKey('1')">1</button>
+            <button onclick="pressKey('2')">2</button>
+            <button onclick="pressKey('3')">3</button>
+            <button onclick="pressKey('4')">4</button>
+            <button onclick="pressKey('5')">5</button>
+            <button onclick="pressKey('6')">6</button>
+            <button onclick="pressKey('7')">7</button>
+            <button onclick="pressKey('8')">8</button>
+            <button onclick="pressKey('9')">9</button>
+            <button onclick="deleteLast()">⌫</button>
+            <button onclick="pressKey('0')">0</button>
+            <button onclick="submitAnswer()" style="background:#00ff88; font-weight:bold;">SUBMIT</button>
+        </div>
+    </div>
+
+    <!-- Overlays -->
+    <div id="correctOverlay" class="overlay">✅ Correct!</div>
+    <div id="wrongOverlay" class="overlay">❌ Wrong</div>
+
+    <div id="debugPanel"></div>
+
+    <!-- === FIREBASE SCRIPTS (Important: Pehle ye load honge) === -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <!-- Main Game Code -->
+    <script>
+        // Debug Function
+        function log(msg, color = '#0f0') {
+            console.log(msg);
+            const panel = document.getElementById('debugPanel');
+            panel.style.display = 'block';
+            
+            const line = document.createElement('div');
+            line.style.color = color;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            panel.appendChild(line);
+            panel.scrollTop = panel.scrollHeight;
+        }
+
+        let firebaseReady = false;
+        let db;
+
+        // Wait for Firebase to load
+        function initFirebase() {
+            if (typeof firebase === "undefined") {
+                log("Firebase script not loaded yet...", "#ff9800");
+                setTimeout(initFirebase, 500);
+                return;
+            }
+
+            const firebaseConfig = {
+                apiKey: "AIzaSyA8HVAmKLpv6YshzqN6boiLjDJ3MEDov3Y",
+                authDomain: "maths-compi.firebaseapp.com",
+                databaseURL: "https://maths-compi-default-rtdb.asia-southeast1.firebasedatabase.app",
+                projectId: "maths-compi",
+                storageBucket: "maths-compi.firebasestorage.app",
+                messagingSenderId: "570914604597",
+                appId: "1:570914604597:web:96df45271bc58ef29d137c"
+            };
+
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                db = firebase.database();
+                firebaseReady = true;
+                log('Firebase Connected Successfully ✅', '#00ff88');
+            } catch (e) {
+                log('Firebase Init Failed: ' + e.message, '#f44336');
+            }
+        }
+
+        // Global Variables
+        let currentRoom = '', currentPlayer = '', currentTeam = '1', currentAnswer = '';
+
+        function showStatus(msg, type = 'error') {
+            const el = document.getElementById('statusMsg');
+            el.innerHTML = msg;
+            el.style.color = type === 'success' ? '#00ff88' : '#ff4444';
+        }
+
+        function joinGame() {
+            if (!firebaseReady) {
+                return showStatus('❌ Firebase not ready yet. Refresh karo.');
+            }
+
+            const roomId = document.getElementById('roomInput').value.trim().toUpperCase();
+            const playerName = document.getElementById('nameInput').value.trim();
+            const team = document.getElementById('teamSelect').value;
+
+            if (!roomId) return showStatus('❌ Room ID enter karo');
+            if (!playerName) return showStatus('❌ Apna naam enter karo');
+
+            currentRoom = roomId;
+            currentPlayer = playerName;
+            currentTeam = team;
+
+            // Rest of your join logic...
+            db.ref('rooms/' + roomId).once('value')
+                .then(snapshot => {
+                    if (!snapshot.exists()) throw new Error("Room not found");
+
+                    const playerId = 'player_' + Date.now();
+                    const playerData = {
+                        name: playerName,
+                        team: team,
+                        joinedAt: Date.now(),
+                        online: true
+                    };
+
+                    return db.ref('rooms/' + roomId + '/players/' + playerId).set(playerData);
+                })
+                .then(() => {
+                    showStatus('✅ Joined Successfully!', 'success');
+                    document.getElementById('joinScreen').style.display = 'none';
+                    document.getElementById('waitingScreen').style.display = 'flex';
+                    document.getElementById('waitRoomInfo').innerHTML = `Room: <b>${roomId}</b><br>Team: <b>${team === '1' ? '💙 BLUE' : '❤️ RED'}</b>`;
+                    listenForGameStart();
+                })
+                .catch(err => {
+                    showStatus('❌ ' + err.message);
+                    log(err.message, '#f44336');
+                });
+        }
+
+        function listenForGameStart() {
+            db.ref('rooms/' + currentRoom + '/gameStarted').on('value', (snap) => {
+                if (snap.val() === true) {
+                    document.getElementById('waitingScreen').style.display = 'none';
+                    document.getElementById('gameScreen').style.display = 'flex';
+                    log('Game Started!', '#00ff88');
+                    listenForQuestions();
+                }
+            });
+        }
+
+        function listenForQuestions() {
+            db.ref('rooms/' + currentRoom + '/currentQuestion').on('value', (snap) => {
+                const q = snap.val();
+                if (q && q.question) {
+                    document.getElementById('questionText').innerText = q.question;
+                    currentAnswer = '';
+                    updateAnswerDisplay();
+                }
+            });
+        }
+
+        function pressKey(num) {
+            if (currentAnswer.length >= 8) return;
+            currentAnswer += num;
+            updateAnswerDisplay();
+        }
+
+        function deleteLast() {
+            currentAnswer = currentAnswer.slice(0, -1);
+            updateAnswerDisplay();
+        }
+
+        function updateAnswerDisplay() {
+            document.getElementById('answerDisplay').innerText = currentAnswer || '_';
+        }
+
+        function submitAnswer() {
+            if (!currentAnswer || !db) return;
+            db.ref('rooms/' + currentRoom + '/answers').push({
+                player: currentPlayer,
+                team: currentTeam,
+                answer: currentAnswer,
+                time: Date.now()
+            }).then(() => {
+                showCorrect();
+                currentAnswer = '';
+                updateAnswerDisplay();
+            });
+        }
+
+        function showCorrect() {
+            const overlay = document.getElementById('correctOverlay');
+            overlay.style.display = 'flex';
+            setTimeout(() => overlay.style.display = 'none', 1000);
+        }
+
+        // Initialize everything
+        window.onload = () => {
+            initFirebase();
+            log('Player App Loaded 🚀');
+        };
+    </script>
+</body>
+</html>
