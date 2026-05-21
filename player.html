@@ -7,13 +7,7 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;700;900&display=swap');
 
-  :root {
-    --blue: #1a73e8;
-    --red: #e53935;
-    --gold: #FFD600;
-    --bg: #0d0d2b;
-  }
-
+  :root { --blue: #1a73e8; --red: #e53935; --gold: #FFD600; --bg: #0d0d2b; }
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
   body {
@@ -26,288 +20,49 @@
     align-items: center;
   }
 
-  /* ===== JOIN SCREEN ===== */
-  #joinScreen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    gap: 20px;
-    padding: 24px;
-    width: 100%;
-    max-width: 420px;
-    background: radial-gradient(ellipse at 50% 0%, #1a1a4e 0%, #0d0d2b 70%);
-  }
-
-  .title {
-    font-family: 'Bangers', cursive;
-    font-size: 48px;
-    letter-spacing: 4px;
-    background: linear-gradient(135deg, #FFD600, #ff6f00);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-align: center;
-  }
-
-  .card {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 20px;
-    padding: 28px 24px;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  .card h2 {
-    font-family: 'Bangers', cursive;
-    font-size: 24px;
-    letter-spacing: 2px;
-    color: var(--gold);
-    text-align: center;
-  }
-
-  label { font-size: 13px; color: #aaa; margin-bottom: 3px; display: block; }
-
-  input, select {
-    width: 100%;
-    padding: 14px 16px;
-    border-radius: 14px;
-    border: 2px solid rgba(255,255,255,0.12);
-    background: rgba(255,255,255,0.07);
-    color: #fff;
-    font-size: 20px;
-    font-family: 'Nunito', sans-serif;
-    font-weight: 700;
-    outline: none;
-    text-align: center;
-    letter-spacing: 4px;
-    transition: border-color 0.2s;
-  }
-  input:focus { border-color: var(--gold); }
-  input.name-input { letter-spacing: 0; font-size: 18px; text-align: left; }
-  select { letter-spacing: 0; text-align: center; }
-  select option { background: #1a1a4e; }
-
-  .btn {
-    padding: 16px;
-    border-radius: 16px;
-    border: none;
-    font-family: 'Bangers', cursive;
-    font-size: 24px;
-    letter-spacing: 2px;
-    cursor: pointer;
-    width: 100%;
-    transition: transform 0.1s, box-shadow 0.2s;
-  }
-  .btn:active { transform: scale(0.96); }
-  .btn-gold {
-    background: linear-gradient(135deg, #FFD600, #ff8f00);
-    color: #0d0d2b;
-    box-shadow: 0 6px 24px rgba(255,214,0,0.3);
-  }
-  .btn-blue {
-    background: linear-gradient(135deg, #1a73e8, #0d47a1);
-    color: #fff;
-    box-shadow: 0 6px 24px rgba(26,115,232,0.3);
-  }
-  .btn-red {
-    background: linear-gradient(135deg, #e53935, #b71c1c);
-    color: #fff;
-    box-shadow: 0 6px 24px rgba(229,57,53,0.3);
-  }
-
-  /* ===== WAITING ===== */
-  #waitingScreen {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    gap: 20px;
-    padding: 24px;
-    text-align: center;
-  }
-
-  .spinner {
-    width: 60px; height: 60px;
-    border: 5px solid rgba(255,255,255,0.1);
-    border-top-color: var(--gold);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ===== GAME SCREEN ===== */
-  #gameScreen {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    min-height: 100vh;
-    padding: 0;
-  }
-
-  .team-bar {
-    width: 100%;
-    padding: 14px 20px;
-    text-align: center;
-    font-family: 'Bangers', cursive;
-    font-size: 22px;
-    letter-spacing: 3px;
-  }
-  .team-bar.blue { background: linear-gradient(135deg, #1a73e8, #0d47a1); }
-  .team-bar.red { background: linear-gradient(135deg, #e53935, #b71c1c); }
-
-  /* Timer, Question, Keypad styles (same as before) */
-  .timer-ring-wrap { margin-top: 20px; position: relative; width: 90px; height: 90px; }
-  .timer-svg { width: 90px; height: 90px; transform: rotate(-90deg); }
-  .timer-bg { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 6; }
-  .timer-arc { fill: none; stroke: var(--gold); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 0.3s; }
-  .timer-num {
-    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    font-family: 'Bangers', cursive; font-size: 32px; color: var(--gold);
-  }
-
-  .round-label { font-size: 14px; color: #888; letter-spacing: 2px; text-transform: uppercase; margin-top: 12px; }
-
-  .question-box {
-    margin: 20px; background: rgba(255,255,255,0.07); border: 2px solid rgba(255,255,255,0.15);
-    border-radius: 20px; padding: 28px 24px; text-align: center; width: calc(100% - 40px); max-width: 380px;
-  }
-  .question-big { font-family: 'Bangers', cursive; font-size: clamp(42px, 14vw, 72px); letter-spacing: 2px; color: #fff; }
-
-  .keypad-wrap { width: 100%; max-width: 380px; padding: 0 20px 20px; display: flex; flex-direction: column; gap: 12px; }
-  .answer-display {
-    background: rgba(255,255,255,0.07); border: 2px solid rgba(255,255,255,0.2);
-    border-radius: 16px; padding: 14px 20px; text-align: center;
-    font-family: 'Bangers', cursive; font-size: 40px; letter-spacing: 4px;
-    min-height: 72px; color: #fff; display: flex; align-items: center; justify-content: center;
-  }
-  .answer-display.has-val { border-color: var(--gold); }
-  .answer-display.correct { border-color: #4caf50; background: rgba(76,175,80,0.15); color: #4caf50; }
-  .answer-display.wrong { border-color: #f44336; background: rgba(244,67,54,0.15); color: #f44336; }
-
-  .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  .key {
-    aspect-ratio: 1; border-radius: 14px; border: 2px solid rgba(255,255,255,0.12);
-    background: rgba(255,255,255,0.07); color: #fff; font-family: 'Bangers', cursive;
-    font-size: 28px; cursor: pointer; transition: transform 0.08s, background 0.1s;
-    display: flex; align-items: center; justify-content: center; user-select: none;
-  }
-  .key:active { transform: scale(0.9); background: rgba(255,255,255,0.15); }
-  .key.del { font-size: 22px; }
-  .key.zero { grid-column: 1; }
-
-  .submit-btn {
-    padding: 18px; border-radius: 16px; border: none; font-family: 'Bangers', cursive;
-    font-size: 28px; letter-spacing: 2px; cursor: pointer; width: 100%; color: #0d0d2b;
-    transition: transform 0.08s;
-  }
-  .submit-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
-
-  .feedback-overlay {
-    position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
-    flex-direction: column; gap: 16px; font-family: 'Bangers', cursive; font-size: 80px;
-    z-index: 50; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
-  }
-  .feedback-overlay p { font-size: 28px; letter-spacing: 2px; }
-
-  .error-msg {
-    background: rgba(229,57,53,0.2); border: 1px solid var(--red); border-radius: 10px;
-    padding: 10px 14px; font-size: 14px; color: #ef9a9a; text-align: center;
-  }
+  #joinScreen { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; gap:20px; padding:24px; width:100%; max-width:420px; background:radial-gradient(ellipse at 50% 0%,#1a1a4e 0%,#0d0d2b 70%); }
+  .title { font-family:'Bangers',cursive; font-size:48px; letter-spacing:4px; background:linear-gradient(135deg,#FFD600,#ff6f00); -webkit-background-clip:text; -webkit-text-fill-color:transparent; text-align:center; }
+  .card { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:20px; padding:28px 24px; width:100%; display:flex; flex-direction:column; gap:14px; }
+  .card h2 { font-family:'Bangers',cursive; font-size:24px; letter-spacing:2px; color:var(--gold); text-align:center; }
+  label { font-size:13px; color:#aaa; margin-bottom:3px; display:block; }
+  input, select { width:100%; padding:14px 16px; border-radius:14px; border:2px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.07); color:#fff; font-size:20px; font-weight:700; outline:none; text-align:center; }
+  input:focus { border-color:var(--gold); }
+  input.name-input { text-align:left; font-size:18px; letter-spacing:0; }
+  .btn { padding:16px; border-radius:16px; border:none; font-family:'Bangers',cursive; font-size:24px; letter-spacing:2px; cursor:pointer; width:100%; }
+  .btn-gold { background:linear-gradient(135deg,#FFD600,#ff8f00); color:#0d0d2b; }
+  .error-msg { background:rgba(229,57,53,0.2); border:1px solid #e53935; border-radius:10px; padding:10px 14px; color:#ef9a9a; text-align:center; margin:10px 0; }
 </style>
 </head>
 <body>
 
-<!-- JOIN SCREEN -->
 <div id="joinScreen">
   <div class="title">🪢 TUG OF WAR</div>
   <div style="font-size:15px;color:#888;text-align:center">Enter Room ID to join the battle!</div>
 
   <div class="card">
     <h2>🎮 JOIN GAME</h2>
-
-    <div>
-      <label>Room ID (from Spectator screen)</label>
-      <input type="text" id="roomInput" placeholder="ABC123" maxlength="6" oninput="this.value=this.value.toUpperCase()">
-    </div>
-
-    <div>
-      <label>Your Name</label>
-      <input type="text" id="nameInput" class="name-input" placeholder="e.g. Ahmed" maxlength="20">
-    </div>
-
-    <div>
-      <label>Your Team</label>
+    <div><label>Room ID</label><input type="text" id="roomInput" placeholder="ABC123" maxlength="6" oninput="this.value=this.value.toUpperCase()"></div>
+    <div><label>Your Name</label><input type="text" id="nameInput" class="name-input" placeholder="e.g. Ahmed" maxlength="20"></div>
+    <div><label>Team</label>
       <select id="teamSelect">
-        <option value="1">💙 Team 1 (Blue)</option>
-        <option value="2">❤️ Team 2 (Red)</option>
+        <option value="1">💙 Team Blue</option>
+        <option value="2">❤️ Team Red</option>
       </select>
     </div>
-
-    <div id="joinError" style="display:none" class="error-msg"></div>
+    <div id="joinError" class="error-msg" style="display:none"></div>
     <button class="btn btn-gold" onclick="joinGame()">⚡ JOIN GAME</button>
   </div>
 </div>
 
-<!-- WAITING SCREEN -->
-<div id="waitingScreen">
-  <div class="spinner"></div>
-  <div style="font-family:'Bangers',cursive;font-size:28px;color:var(--gold)">JOINED! ✅</div>
-  <div style="color:#888">Waiting for game to start...</div>
-  <div id="waitRoomId" style="font-size:14px;color:#555"></div>
+<div id="waitingScreen" style="display:none; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; gap:20px; padding:24px; text-align:center;">
+  <div class="spinner" style="width:60px;height:60px;border:5px solid rgba(255,255,255,0.1);border-top-color:#FFD600;border-radius:50%;animation:spin 1s linear infinite;"></div>
+  <div style="font-family:'Bangers',cursive;font-size:28px;color:#FFD600">JOINED! ✅</div>
+  <div id="waitRoomId" style="color:#888"></div>
 </div>
 
-<!-- GAME SCREEN -->
-<div id="gameScreen">
-  <div class="team-bar blue" id="teamBar">💙 TEAM BLUE</div>
+<!-- Game Screen (short version for now) -->
+<div id="gameScreen" style="display:none">Game Started...</div>
 
-  <div class="timer-ring-wrap">
-    <svg class="timer-svg" viewBox="0 0 90 90">
-      <circle class="timer-bg" cx="45" cy="45" r="39"/>
-      <circle class="timer-arc" id="timerArc" cx="45" cy="45" r="39" stroke-dasharray="245" stroke-dashoffset="0"/>
-    </svg>
-    <div class="timer-num" id="timerNum">15</div>
-  </div>
-
-  <div class="round-label" id="roundLabel">ROUND 1</div>
-
-  <div class="question-box">
-    <div class="q-label">SOLVE THIS:</div>
-    <div class="question-big" id="questionText">—</div>
-  </div>
-
-  <div class="keypad-wrap">
-    <div class="answer-display" id="answerDisplay">_</div>
-
-    <div class="keypad" id="keypad">
-      <div class="key" onclick="pressKey('1')">1</div>
-      <div class="key" onclick="pressKey('2')">2</div>
-      <div class="key" onclick="pressKey('3')">3</div>
-      <div class="key" onclick="pressKey('4')">4</div>
-      <div class="key" onclick="pressKey('5')">5</div>
-      <div class="key" onclick="pressKey('6')">6</div>
-      <div class="key" onclick="pressKey('7')">7</div>
-      <div class="key" onclick="pressKey('8')">8</div>
-      <div class="key" onclick="pressKey('9')">9</div>
-      <div class="key zero" onclick="pressKey('0')">0</div>
-      <div class="key del" onclick="deleteLast()">⌫</div>
-    </div>
-
-    <button class="submit-btn blue" id="submitBtn" onclick="submitAnswer()">✅ SUBMIT ANSWER</button>
-    <div id="nextRoundMsg" style="display:none;text-align:center;padding:20px;font-size:18px;color:#aaa;">⏳ Waiting for next round...</div>
-  </div>
-</div>
-
-<!-- Feedback overlays -->
-<div class="feedback-overlay" id="correctOverlay" style="color:#4caf50">✅<p>CORRECT!</p></div>
-<div class="feedback-overlay" id="wrongOverlay" style="color:#f44336">❌<p>WRONG!</p></div>
-
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
@@ -316,237 +71,55 @@ const FIREBASE_URL = 'https://maths-compi-default-rtdb.asia-southeast1.firebasei
 firebase.initializeApp({ databaseURL: FIREBASE_URL });
 const db = firebase.database();
 
-let playerState = {
-  roomId: '',
-  name: '',
-  team: 1,
-  teamColor: 'blue',
-  currentAnswer: '',
-  correctAns: null,
-  submitted: false,
-  currentRound: 0,
-  questionTime: 15,
-};
-
-let timerInterval = null;
-let pollInterval = null;
-let lastRoundTs = 0;
-
-// ===== JOIN GAME =====
 function joinGame() {
   const roomId = document.getElementById('roomInput').value.trim().toUpperCase();
   const name = document.getElementById('nameInput').value.trim();
   const team = parseInt(document.getElementById('teamSelect').value);
 
+  const errorEl = document.getElementById('joinError');
+  errorEl.style.display = 'none';
+
   if (!roomId || roomId.length < 4) {
-    showError('Please enter a valid Room ID');
+    errorEl.textContent = "Room ID kam se kam 4 characters ka hona chahiye";
+    errorEl.style.display = 'block';
     return;
   }
   if (!name) {
-    showError('Please enter your name');
+    errorEl.textContent = "Name enter karo";
+    errorEl.style.display = 'block';
     return;
   }
 
+  console.log("Trying to join Room:", roomId);   // ← Debug
+
   const roomRef = db.ref('rooms/' + roomId);
 
-  roomRef.child('config').once('value', (snap) => {
-    if (!snap.exists()) {
-      showError('Room not found! Check the ID on the projector screen.');
-      return;
-    }
+  roomRef.child('config').once('value')
+    .then((snap) => {
+      console.log("Config Data:", snap.val());   // ← Debug
+      if (!snap.exists()) {
+        errorEl.textContent = `Room "${roomId}" not found! PC pe Spectator se room create kiya hai?`;
+        errorEl.style.display = 'block';
+        return;
+      }
 
-    const config = snap.val();
+      // Success
+      document.getElementById('joinScreen').style.display = 'none';
+      document.getElementById('waitingScreen').style.display = 'flex';
+      document.getElementById('waitRoomId').textContent = `Room: ${roomId}`;
 
-    playerState.roomId = roomId;
-    playerState.name = name;
-    playerState.team = team;
-    playerState.teamColor = team === 1 ? 'blue' : 'red';
-    playerState.questionTime = config.questionTime || 15;
+      // Join signal
+      const teamKey = team === 1 ? 't1players' : 't2players';
+      roomRef.child('teams').child(teamKey).push(name);
+      roomRef.child('teams').child(team === 1 ? 't1' : 't2').set(true);
 
-    // Join karo
-    const teamKey = team === 1 ? 't1players' : 't2players';
-    roomRef.child('teams').child(teamKey).push(name);
-    roomRef.child('teams').child(team === 1 ? 't1' : 't2').set(true);
-
-    // Switch screen
-    document.getElementById('joinScreen').style.display = 'none';
-    document.getElementById('waitingScreen').style.display = 'flex';
-    document.getElementById('waitRoomId').textContent = 'Room: ' + roomId;
-
-    pollInterval = setInterval(checkForNewRound, 500);
-  }).catch(() => {
-    showError('Room not found or connection error!');
-  });
-}
-
-function showError(msg) {
-  const el = document.getElementById('joinError');
-  el.textContent = msg;
-  el.style.display = 'block';
-}
-
-// ===== CHECK FOR NEW ROUND =====
-function checkForNewRound() {
-  if (!playerState.roomId) return;
-
-  db.ref('rooms/' + playerState.roomId + '/round').once('value', (snap) => {
-    const data = snap.val();
-    if (!data) return;
-    if (data.ts === lastRoundTs) return;
-
-    lastRoundTs = data.ts;
-
-    if (data.round !== playerState.currentRound) {
-      playerState.currentRound = data.round;
-      loadRound(data);
-    }
-  });
-}
-
-function loadRound(data) {
-  const qKey = playerState.team === 1 ? 'q1' : 'q2';
-  const q = data[qKey];
-  if (!q) return;
-
-  playerState.correctAns = q.ans;
-  playerState.submitted = false;
-  playerState.currentAnswer = '';
-
-  document.getElementById('waitingScreen').style.display = 'none';
-  document.getElementById('gameScreen').style.display = 'flex';
-
-  const bar = document.getElementById('teamBar');
-  const teamName = playerState.team === 1 ? (data.team1 || 'Team Blue') : (data.team2 || 'Team Red');
-  bar.textContent = (playerState.team === 1 ? '💙 ' : '❤️ ') + teamName.toUpperCase();
-  bar.className = 'team-bar ' + playerState.teamColor;
-
-  document.getElementById('roundLabel').textContent = 'ROUND ' + data.round;
-  document.getElementById('questionText').textContent = q.text;
-  document.getElementById('answerDisplay').textContent = '_';
-  document.getElementById('answerDisplay').className = 'answer-display';
-
-  const btn = document.getElementById('submitBtn');
-  btn.disabled = false;
-  btn.className = 'submit-btn ' + playerState.teamColor;
-  btn.textContent = '✅ SUBMIT ANSWER';
-
-  document.getElementById('nextRoundMsg').style.display = 'none';
-  document.querySelectorAll('.key').forEach(k => k.style.pointerEvents = '');
-
-  startTimer(data.time || playerState.questionTime);
-}
-
-// Timer, Keypad, Submit functions (same as before)
-function startTimer(seconds) {
-  clearInterval(timerInterval);
-  let remaining = seconds;
-  const arc = document.getElementById('timerArc');
-  const numEl = document.getElementById('timerNum');
-  const circumference = 245;
-
-  function update() {
-    numEl.textContent = remaining;
-    const offset = circumference * (1 - remaining / seconds);
-    arc.style.strokeDashoffset = offset;
-    if (remaining <= 5) {
-      arc.style.stroke = '#f44336';
-      numEl.style.color = '#f44336';
-    } else {
-      arc.style.stroke = 'var(--gold)';
-      numEl.style.color = 'var(--gold)';
-    }
-  }
-  update();
-
-  timerInterval = setInterval(() => {
-    remaining--;
-    update();
-    if (remaining <= 0) {
-      clearInterval(timerInterval);
-      if (!playerState.submitted) autoSubmit();
-    }
-  }, 1000);
-}
-
-function pressKey(digit) {
-  if (playerState.submitted) return;
-  if (playerState.currentAnswer.length >= 6) return;
-  playerState.currentAnswer += digit;
-  updateAnswerDisplay();
-}
-
-function deleteLast() {
-  if (playerState.submitted) return;
-  playerState.currentAnswer = playerState.currentAnswer.slice(0, -1);
-  updateAnswerDisplay();
-}
-
-function updateAnswerDisplay() {
-  const el = document.getElementById('answerDisplay');
-  el.textContent = playerState.currentAnswer || '_';
-  el.className = 'answer-display' + (playerState.currentAnswer ? ' has-val' : '');
-}
-
-function submitAnswer() {
-  if (playerState.submitted || !playerState.currentAnswer) return;
-  clearInterval(timerInterval);
-  playerState.submitted = true;
-
-  const userAns = parseInt(playerState.currentAnswer);
-  const correct = userAns === playerState.correctAns;
-  sendAnswer(correct, userAns);
-  showFeedback(correct);
-}
-
-function autoSubmit() {
-  playerState.submitted = true;
-  const userAns = playerState.currentAnswer ? parseInt(playerState.currentAnswer) : null;
-  const correct = userAns !== null && userAns === playerState.correctAns;
-  sendAnswer(correct, userAns);
-  showFeedback(correct);
-}
-
-function sendAnswer(correct, value) {
-  const payload = {
-    team: playerState.team,
-    name: playerState.name,
-    value,
-    correct,
-    round: playerState.currentRound,
-    ts: Date.now(),
-  };
-
-  const teamKey = playerState.team === 1 ? 't1' : 't2';
-  db.ref('rooms/' + playerState.roomId + '/answers/' + teamKey).set(payload);
-}
-
-function showFeedback(correct) {
-  const ansEl = document.getElementById('answerDisplay');
-  const btn = document.getElementById('submitBtn');
-
-  if (correct) {
-    ansEl.className = 'answer-display correct';
-    ansEl.textContent = '✅ ' + playerState.currentAnswer;
-    btn.textContent = '✅ CORRECT!';
-    btn.style.background = '#4caf50';
-
-    const overlay = document.getElementById('correctOverlay');
-    overlay.style.display = 'flex';
-    setTimeout(() => overlay.style.display = 'none', 1500);
-  } else {
-    ansEl.className = 'answer-display wrong';
-    ansEl.textContent = '❌ ' + (playerState.currentAnswer || '?');
-    btn.textContent = '❌ WRONG';
-    btn.style.background = '#f44336';
-
-    const overlay = document.getElementById('wrongOverlay');
-    overlay.style.display = 'flex';
-    setTimeout(() => overlay.style.display = 'none', 1500);
-  }
-
-  btn.disabled = true;
-  document.querySelectorAll('.key').forEach(k => k.style.pointerEvents = 'none');
-  document.getElementById('nextRoundMsg').style.display = 'block';
+      alert("✅ Successfully Joined! Waiting for teacher to start match.");
+    })
+    .catch((err) => {
+      console.error(err);
+      errorEl.textContent = "Connection error! Firebase check karo.";
+      errorEl.style.display = 'block';
+    });
 }
 </script>
 </body>
