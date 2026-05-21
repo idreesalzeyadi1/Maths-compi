@@ -3,65 +3,48 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-eval' https://www.gstatic.com https://*.firebaseio.com 'unsafe-inline'; connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com;">
+
 <title>🪢 Tug of War — Player</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;700;900&display=swap');
-
   :root { --blue: #1a73e8; --red: #e53935; --gold: #FFD600; --bg: #0d0d2b; }
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-  body {
-    font-family: 'Nunito', sans-serif;
-    background: var(--bg);
-    color: #fff;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Nunito',sans-serif; background:var(--bg); color:#fff; min-height:100vh; display:flex; flex-direction:column; align-items:center; }
   #joinScreen { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; gap:20px; padding:24px; width:100%; max-width:420px; background:radial-gradient(ellipse at 50% 0%,#1a1a4e 0%,#0d0d2b 70%); }
   .title { font-family:'Bangers',cursive; font-size:48px; letter-spacing:4px; background:linear-gradient(135deg,#FFD600,#ff6f00); -webkit-background-clip:text; -webkit-text-fill-color:transparent; text-align:center; }
   .card { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:20px; padding:28px 24px; width:100%; display:flex; flex-direction:column; gap:14px; }
-  .card h2 { font-family:'Bangers',cursive; font-size:24px; letter-spacing:2px; color:var(--gold); text-align:center; }
   label { font-size:13px; color:#aaa; margin-bottom:3px; display:block; }
-  input, select { width:100%; padding:14px 16px; border-radius:14px; border:2px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.07); color:#fff; font-size:20px; font-weight:700; outline:none; text-align:center; }
+  input, select { width:100%; padding:14px 16px; border-radius:14px; border:2px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.07); color:#fff; font-size:20px; font-weight:700; outline:none; }
   input:focus { border-color:var(--gold); }
-  input.name-input { text-align:left; font-size:18px; letter-spacing:0; }
-  .btn { padding:16px; border-radius:16px; border:none; font-family:'Bangers',cursive; font-size:24px; letter-spacing:2px; cursor:pointer; width:100%; }
-  .btn-gold { background:linear-gradient(135deg,#FFD600,#ff8f00); color:#0d0d2b; }
-  .error-msg { background:rgba(229,57,53,0.2); border:1px solid #e53935; border-radius:10px; padding:10px 14px; color:#ef9a9a; text-align:center; margin:10px 0; }
+  .btn { padding:16px; border-radius:16px; border:none; font-family:'Bangers',cursive; font-size:24px; letter-spacing:2px; cursor:pointer; width:100%; background:linear-gradient(135deg,#FFD600,#ff8f00); color:#0d0d2b; }
+  .error-msg { background:rgba(229,57,53,0.2); border:1px solid #e53935; border-radius:10px; padding:10px 14px; color:#ef9a9a; text-align:center; display:none; }
 </style>
 </head>
 <body>
 
 <div id="joinScreen">
   <div class="title">🪢 TUG OF WAR</div>
-  <div style="font-size:15px;color:#888;text-align:center">Enter Room ID to join the battle!</div>
-
   <div class="card">
     <h2>🎮 JOIN GAME</h2>
     <div><label>Room ID</label><input type="text" id="roomInput" placeholder="ABC123" maxlength="6" oninput="this.value=this.value.toUpperCase()"></div>
-    <div><label>Your Name</label><input type="text" id="nameInput" class="name-input" placeholder="e.g. Ahmed" maxlength="20"></div>
+    <div><label>Your Name</label><input type="text" id="nameInput" placeholder="e.g. Ahmed" maxlength="20"></div>
     <div><label>Team</label>
       <select id="teamSelect">
         <option value="1">💙 Team Blue</option>
         <option value="2">❤️ Team Red</option>
       </select>
     </div>
-    <div id="joinError" class="error-msg" style="display:none"></div>
-    <button class="btn btn-gold" onclick="joinGame()">⚡ JOIN GAME</button>
+    <div id="joinError" class="error-msg"></div>
+    <button class="btn" onclick="joinGame()">⚡ JOIN GAME</button>
   </div>
 </div>
 
-<div id="waitingScreen" style="display:none; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; gap:20px; padding:24px; text-align:center;">
-  <div class="spinner" style="width:60px;height:60px;border:5px solid rgba(255,255,255,0.1);border-top-color:#FFD600;border-radius:50%;animation:spin 1s linear infinite;"></div>
+<div id="waitingScreen" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:20px;padding:24px;text-align:center;">
+  <div style="width:60px;height:60px;border:5px solid rgba(255,255,255,0.1);border-top-color:#FFD600;border-radius:50%;animation:spin 1s linear infinite;"></div>
   <div style="font-family:'Bangers',cursive;font-size:28px;color:#FFD600">JOINED! ✅</div>
-  <div id="waitRoomId" style="color:#888"></div>
+  <div id="waitRoomId" style="color:#aaa"></div>
 </div>
-
-<!-- Game Screen (short version for now) -->
-<div id="gameScreen" style="display:none">Game Started...</div>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -75,49 +58,37 @@ function joinGame() {
   const roomId = document.getElementById('roomInput').value.trim().toUpperCase();
   const name = document.getElementById('nameInput').value.trim();
   const team = parseInt(document.getElementById('teamSelect').value);
-
   const errorEl = document.getElementById('joinError');
+
   errorEl.style.display = 'none';
 
-  if (!roomId || roomId.length < 4) {
-    errorEl.textContent = "Room ID kam se kam 4 characters ka hona chahiye";
-    errorEl.style.display = 'block';
-    return;
-  }
-  if (!name) {
-    errorEl.textContent = "Name enter karo";
-    errorEl.style.display = 'block';
-    return;
-  }
-
-  console.log("Trying to join Room:", roomId);   // ← Debug
+  if (!roomId || roomId.length < 4) return errorEl.textContent = "Valid Room ID daalo", errorEl.style.display = 'block';
+  if (!name) return errorEl.textContent = "Apna naam likho", errorEl.style.display = 'block';
 
   const roomRef = db.ref('rooms/' + roomId);
 
   roomRef.child('config').once('value')
-    .then((snap) => {
-      console.log("Config Data:", snap.val());   // ← Debug
+    .then(snap => {
       if (!snap.exists()) {
-        errorEl.textContent = `Room "${roomId}" not found! PC pe Spectator se room create kiya hai?`;
+        errorEl.textContent = `Room "${roomId}" nahi mila. PC se naya room banao.`;
         errorEl.style.display = 'block';
         return;
       }
 
-      // Success
+      // Join Success
       document.getElementById('joinScreen').style.display = 'none';
       document.getElementById('waitingScreen').style.display = 'flex';
       document.getElementById('waitRoomId').textContent = `Room: ${roomId}`;
 
-      // Join signal
       const teamKey = team === 1 ? 't1players' : 't2players';
-      roomRef.child('teams').child(teamKey).push(name);
-      roomRef.child('teams').child(team === 1 ? 't1' : 't2').set(true);
+      roomRef.child('teams/' + teamKey).push(name);
+      roomRef.child('teams/' + (team === 1 ? 't1' : 't2')).set(true);
 
-      alert("✅ Successfully Joined! Waiting for teacher to start match.");
+      alert("✅ Joined! Ab Teacher se START MATCH karwao.");
     })
-    .catch((err) => {
+    .catch(err => {
       console.error(err);
-      errorEl.textContent = "Connection error! Firebase check karo.";
+      errorEl.textContent = "Firebase connection error!";
       errorEl.style.display = 'block';
     });
 }
