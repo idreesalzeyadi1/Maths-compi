@@ -1,189 +1,448 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🪢 Tug of War — Player</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;700;900&display=swap');
-  :root { --blue:#1a73e8; --red:#e53935; --gold:#FFD600; --bg:#0d0d2b; }
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  body { font-family:'Nunito',sans-serif; background:var(--bg); color:#fff; min-height:100vh; display:flex; flex-direction:column; align-items:center; }
-
-  /* DEBUG PANEL */
-  #debugPanel {
-    position:fixed; bottom:0; left:0; right:0;
-    background:#000;
-    border-top:2px solid #f44336;
-    padding:8px 12px;
-    font-size:11px;
-    font-family:monospace;
-    color:#f44336;
-    max-height:120px;
-    overflow-y:auto;
-    z-index:9999;
-    display:none;
-  }
-  #debugPanel.visible { display:block; }
-
-  #joinScreen { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; gap:20px; padding:24px; width:100%; max-width:420px; background:radial-gradient(ellipse at 50% 0%,#1a1a4e 0%,#0d0d2b 70%); }
-  .title { font-family:'Bangers',cursive; font-size:48px; letter-spacing:4px; background:linear-gradient(135deg,#FFD600,#ff6f00); -webkit-background-clip:text; -webkit-text-fill-color:transparent; text-align:center; }
-  .card { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:20px; padding:28px 24px; width:100%; display:flex; flex-direction:column; gap:14px; }
-  .card h2 { font-family:'Bangers',cursive; font-size:24px; letter-spacing:2px; color:var(--gold); text-align:center; }
-  label { font-size:13px; color:#aaa; margin-bottom:3px; display:block; }
-  input, select { width:100%; padding:14px 16px; border-radius:14px; border:2px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.07); color:#fff; font-size:20px; font-family:'Nunito',sans-serif; font-weight:700; outline:none; text-align:center; letter-spacing:4px; transition:border-color 0.2s; }
-  input:focus { border-color:var(--gold); }
-  input.name-input { letter-spacing:0; font-size:18px; text-align:left; }
-  select { letter-spacing:0; }
-  select option { background:#1a1a4e; }
-  .btn { padding:16px; border-radius:16px; border:none; font-family:'Bangers',cursive; font-size:24px; letter-spacing:2px; cursor:pointer; width:100%; transition:transform 0.1s; }
-  .btn:active { transform:scale(0.96); }
-  .btn:disabled { background:#333 !important; color:#666 !important; }
-  .btn-gold { background:linear-gradient(135deg,#FFD600,#ff8f00); color:#0d0d2b; }
-  .error-msg { background:rgba(229,57,53,0.2); border:1px solid var(--red); border-radius:10px; padding:10px 14px; font-size:14px; color:#ef9a9a; text-align:center; }
-  .success-msg { background:rgba(76,175,80,0.2); border:1px solid #4caf50; border-radius:10px; padding:10px 14px; font-size:14px; color:#81c784; text-align:center; }
-
-  #waitingScreen { display:none; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; gap:20px; padding:24px; text-align:center; }
-  .spinner { width:60px; height:60px; border:5px solid rgba(255,255,255,0.1); border-top-color:var(--gold); border-radius:50%; animation:spin 1s linear infinite; }
-  @keyframes spin { to{transform:rotate(360deg)} }
-
-  #gameScreen { display:none; flex-direction:column; align-items:center; width:100%; min-height:100vh; padding-bottom:140px; }
-  .team-bar { width:100%; padding:14px 20px; text-align:center; font-family:'Bangers',cursive; font-size:22px; letter-spacing:3px; }
-  .team-bar.blue { background:linear-gradient(135deg,#1a73e8,#0d47a1); }
-  .team-bar.red { background:linear-gradient(135deg,#e53935,#b71c1c); }
-  .timer-ring-wrap { margin-top:20px; position:relative; width:90px; height:90px; }
-  .timer-svg { width:90px; height:90px; transform:rotate(-90deg); }
-  .timer-bg { fill:none; stroke:rgba(255,255,255,0.1); stroke-width:6; }
-  .timer-arc { fill:none; stroke:var(--gold); stroke-width:6; stroke-linecap:round; transition:stroke-dashoffset 1s linear, stroke 0.3s; }
-  .timer-num { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'Bangers',cursive; font-size:32px; color:var(--gold); }
-  .round-label { font-size:14px; color:#888; letter-spacing:2px; text-transform:uppercase; margin-top:12px; }
-  .question-box { margin:20px; background:rgba(255,255,255,0.07); border:2px solid rgba(255,255,255,0.15); border-radius:20px; padding:28px 24px; text-align:center; width:calc(100% - 40px); max-width:380px; }
-  .q-label { font-size:13px; color:#888; letter-spacing:2px; margin-bottom:12px; }
-  .question-big { font-family:'Bangers',cursive; font-size:clamp(42px,14vw,72px); letter-spacing:2px; color:#fff; }
-  .keypad-wrap { width:100%; max-width:380px; padding:0 20px 20px; display:flex; flex-direction:column; gap:12px; }
-  .answer-display { background:rgba(255,255,255,0.07); border:2px solid rgba(255,255,255,0.2); border-radius:16px; padding:14px 20px; text-align:center; font-family:'Bangers',cursive; font-size:40px; min-height:72px; color:#fff; display:flex; align-items:center; justify-content:center; }
-  .answer-display.has-val { border-color:var(--gold); }
-  .answer-display.correct { border-color:#4caf50; background:rgba(76,175,80,0.15); color:#4caf50; }
-  .answer-display.wrong { border-color:#f44336; background:rgba(244,67,54,0.15); color:#f44336; }
-  .keypad { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-  .key { aspect-ratio:1; border-radius:14px; border:2px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.07); color:#fff; font-family:'Bangers',cursive; font-size:28px; cursor:pointer; display:flex; align-items:center; justify-content:center; user-select:none; transition:transform 0.08s; }
-  .key:active { transform:scale(0.9); background:rgba(255,255,255,0.2); }
-  .submit-btn { padding:18px; border-radius:16px; border:none; font-family:'Bangers',cursive; font-size:28px; letter-spacing:2px; cursor:pointer; width:100%; background:linear-gradient(135deg,#FFD600,#ff8f00); color:#0d0d2b; }
-  .submit-btn:disabled { background:#333; color:#666; cursor:not-allowed; }
-  #nextRoundMsg { display:none; text-align:center; padding:16px; font-size:16px; color:#aaa; background:rgba(255,255,255,0.05); border-radius:12px; }
-  .feedback-overlay { position:fixed; inset:0; display:none; align-items:center; justify-content:center; flex-direction:column; gap:16px; font-family:'Bangers',cursive; font-size:80px; z-index:50; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px); }
-  .feedback-overlay p { font-size:28px; letter-spacing:2px; }
-</style>
-</head>
-<body>
-
-<!-- DEBUG PANEL -->
-<div id="debugPanel"></div>
-
-<!-- JOIN SCREEN -->
-<div id="joinScreen">
-  <div class="title">🪢 TUG OF WAR</div>
-  <div style="font-size:15px;color:#888;text-align:center">Room ID daal ke apni team join karo!</div>
-  <div class="card">
-    <h2>🎮 JOIN GAME</h2>
-    <div>
-      <label>Room ID (Projector se dekho)</label>
-      <input type="text" id="roomInput" placeholder="ABC123" maxlength="6"
-        oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
-    </div>
-    <div>
-      <label>Apna Naam</label>
-      <input type="text" id="nameInput" class="name-input" placeholder="e.g. Ahmed" maxlength="20">
-    </div>
-    <div>
-      <label>Apni Team</label>
-      <select id="teamSelect">
-        <option value="1">💙 Team 1 (Blue)</option>
-        <option value="2">❤️ Team 2 (Red)</option>
-      </select>
-    </div>
-    <div id="statusMsg" style="display:none"></div>
-    <button class="btn btn-gold" id="joinBtn" onclick="joinGame()">⚡ JOIN GAME</button>
-  </div>
-  <div style="font-size:11px;color:#444;text-align:center">
-    Firebase: maths-compi-default-rtdb.asia-southeast1
-  </div>
-</div>
-
-<!-- WAITING -->
-<div id="waitingScreen">
-  <div class="spinner"></div>
-  <div style="font-family:'Bangers',cursive;font-size:28px;color:var(--gold)">JOINED! ✅</div>
-  <div style="color:#888;margin-top:8px" id="waitMsg">Teacher ke START MATCH ka wait karo...</div>
-  <div style="margin-top:16px;font-size:13px;color:#555" id="waitRoomInfo"></div>
-</div>
-
-<!-- GAME -->
-<div id="gameScreen">
-  <div class="team-bar blue" id="teamBar">💙 TEAM BLUE</div>
-  <div class="timer-ring-wrap">
-    <svg class="timer-svg" viewBox="0 0 90 90">
-      <circle class="timer-bg" cx="45" cy="45" r="39"/>
-      <circle class="timer-arc" id="timerArc" cx="45" cy="45" r="39" stroke-dasharray="245" stroke-dashoffset="0"/>
-    </svg>
-    <div class="timer-num" id="timerNum">15</div>
-  </div>
-  <div class="round-label" id="roundLabel">ROUND 1</div>
-  <div class="question-box">
-    <div class="q-label">YEH SOLVE KARO:</div>
-    <div class="question-big" id="questionText">—</div>
-  </div>
-  <div class="keypad-wrap">
-    <div class="answer-display" id="answerDisplay">_</div>
-    <div class="keypad">
-      <div class="key" onclick="pressKey('1')">1</div>
-      <div class="key" onclick="pressKey('2')">2</div>
-      <div class="key" onclick="pressKey('3')">3</div>
-      <div class="key" onclick="pressKey('4')">4</div>
-      <div class="key" onclick="pressKey('5')">5</div>
-      <div class="key" onclick="pressKey('6')">6</div>
-      <div class="key" onclick="pressKey('7')">7</div>
-      <div class="key" onclick="pressKey('8')">8</div>
-      <div class="key" onclick="pressKey('9')">9</div>
-      <div class="key" onclick="pressKey('0')">0</div>
-      <div class="key" onclick="deleteLast()">⌫</div>
-    </div>
-    <button class="submit-btn" id="submitBtn" onclick="submitAnswer()">✅ SUBMIT</button>
-    <div id="nextRoundMsg">⏳ Next round ka wait karo...</div>
-  </div>
-</div>
-
-<!-- Feedback -->
-<div class="feedback-overlay" id="correctOverlay" style="color:#4caf50">✅<p>BILKUL SAHI!</p></div>
-<div class="feedback-overlay" id="wrongOverlay" style="color:#f44336">❌<p>GALAT!</p></div>
-
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-
 <script>
 // ===== DEBUG =====
-function log(msg, color) {
+function log(msg, color = '#0f0') {
   console.log(msg);
+
   const p = document.getElementById('debugPanel');
   p.classList.add('visible');
+
   const line = document.createElement('div');
-  line.style.color = color || '#0f0';
-  line.textContent = new Date().toLocaleTimeString() + ' → ' + msg;
+  line.style.color = color;
+  line.textContent =
+    new Date().toLocaleTimeString() + ' → ' + msg;
+
   p.appendChild(line);
   p.scrollTop = p.scrollHeight;
 }
 
+// ===== FIREBASE CONFIG =====
+const firebaseConfig = {
+  databaseURL:
+    "https://maths-compi-default-rtdb.asia-southeast1.firebasedatabase.app"
+};
+
 // ===== FIREBASE INIT =====
-const FIREBASE_URL = 'https://maths-compi-default-rtdb.asia-southeast1.firebaseio.com';
 let firebaseReady = false;
 
 try {
-  firebase.initializeApp({ databaseURL: FIREBASE_URL });
+
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
+
   firebaseReady = true;
-  log('Firebase init OK ✅', '#0f0');
-} catch(e) {
-  log('Firebase init FAILED: ' + e.message, '#f44336');
+
+  log('Firebase Connected ✅');
+
+} catch (e) {
+
+  log(
+    'Firebase Init Failed: ' + e.message,
+    '#f44336'
+  );
+
 }
 
 const db = firebase.database();
+
+// ===== GLOBAL STATE =====
+let currentRoom = '';
+let currentPlayer = '';
+let currentTeam = '1';
+
+// ===== STATUS MESSAGE =====
+function showStatus(message, type = 'error') {
+
+  const status =
+    document.getElementById('statusMsg');
+
+  status.style.display = 'block';
+  status.innerText = message;
+
+  status.className =
+    type === 'error'
+      ? 'error-msg'
+      : 'success-msg';
+}
+
+// ===== JOIN GAME =====
+function joinGame() {
+
+  log('JOIN button clicked');
+
+  // Inputs
+  const roomId =
+    document
+      .getElementById('roomInput')
+      .value
+      .trim()
+      .toUpperCase();
+
+  const playerName =
+    document
+      .getElementById('nameInput')
+      .value
+      .trim();
+
+  const team =
+    document
+      .getElementById('teamSelect')
+      .value;
+
+  // Validation
+  if (!roomId) {
+
+    showStatus(
+      '❌ Enter Room ID'
+    );
+
+    return;
+  }
+
+  if (!playerName) {
+
+    showStatus(
+      '❌ Enter Your Name'
+    );
+
+    return;
+  }
+
+  if (!firebaseReady) {
+
+    showStatus(
+      '❌ Firebase not connected'
+    );
+
+    return;
+  }
+
+  currentRoom = roomId;
+  currentPlayer = playerName;
+  currentTeam = team;
+
+  log('Checking room: ' + roomId);
+
+  // ===== CHECK ROOM =====
+  db.ref('rooms/' + roomId)
+    .once('value')
+
+    .then(snapshot => {
+
+      if (!snapshot.exists()) {
+
+        log(
+          'Room NOT FOUND ❌',
+          '#f44336'
+        );
+
+        showStatus(
+          '❌ Room Not Found'
+        );
+
+        throw new Error('Room not found');
+      }
+
+      log('Room Found ✅');
+
+      // ===== CREATE PLAYER =====
+      const playerId =
+        'player_' + Date.now();
+
+      const playerData = {
+        id: playerId,
+        name: playerName,
+        team: team,
+        joinedAt: Date.now(),
+        online: true
+      };
+
+      return db
+        .ref(
+          'rooms/' +
+          roomId +
+          '/players/' +
+          playerId
+        )
+        .set(playerData);
+
+    })
+
+    .then(() => {
+
+      log(
+        'Player Joined Successfully ✅'
+      );
+
+      showStatus(
+        '✅ Joined Successfully',
+        'success'
+      );
+
+      // ===== SHOW WAITING SCREEN =====
+      document
+        .getElementById('joinScreen')
+        .style.display = 'none';
+
+      document
+        .getElementById('waitingScreen')
+        .style.display = 'flex';
+
+      document
+        .getElementById('waitRoomInfo')
+        .innerHTML =
+        `
+        Room: <b>${currentRoom}</b><br>
+        Team:
+        <b>
+        ${
+          currentTeam === '1'
+            ? '💙 BLUE'
+            : '❤️ RED'
+        }
+        </b>
+        `;
+
+      listenForGameStart();
+
+    })
+
+    .catch(error => {
+
+      log(
+        'Error: ' + error.message,
+        '#f44336'
+      );
+
+    });
+
+}
+
+// ===== LISTEN FOR GAME START =====
+function listenForGameStart() {
+
+  log('Waiting for game start...');
+
+  db.ref(
+    'rooms/' +
+    currentRoom +
+    '/gameStarted'
+  )
+
+  .on('value', snapshot => {
+
+    const started = snapshot.val();
+
+    if (started === true) {
+
+      log('GAME STARTED 🚀');
+
+      document
+        .getElementById('waitingScreen')
+        .style.display = 'none';
+
+      document
+        .getElementById('gameScreen')
+        .style.display = 'flex';
+
+      // Team UI
+      const teamBar =
+        document.getElementById('teamBar');
+
+      if (currentTeam === '1') {
+
+        teamBar.innerHTML =
+          '💙 TEAM BLUE';
+
+        teamBar.className =
+          'team-bar blue';
+
+      } else {
+
+        teamBar.innerHTML =
+          '❤️ TEAM RED';
+
+        teamBar.className =
+          'team-bar red';
+
+      }
+
+      listenForQuestions();
+
+    }
+
+  });
+
+}
+
+// ===== QUESTION LISTENER =====
+function listenForQuestions() {
+
+  db.ref(
+    'rooms/' +
+    currentRoom +
+    '/currentQuestion'
+  )
+
+  .on('value', snapshot => {
+
+    const data = snapshot.val();
+
+    if (!data) return;
+
+    log('New Question Loaded');
+
+    document
+      .getElementById('questionText')
+      .innerText =
+      data.question || '—';
+
+  });
+
+}
+
+// ===== ANSWER INPUT =====
+let currentAnswer = '';
+
+function pressKey(num) {
+
+  if (currentAnswer.length >= 8)
+    return;
+
+  currentAnswer += num;
+
+  updateAnswerDisplay();
+}
+
+function deleteLast() {
+
+  currentAnswer =
+    currentAnswer.slice(0, -1);
+
+  updateAnswerDisplay();
+}
+
+function updateAnswerDisplay() {
+
+  const display =
+    document.getElementById(
+      'answerDisplay'
+    );
+
+  display.innerText =
+    currentAnswer || '_';
+
+  if (currentAnswer) {
+
+    display.classList.add('has-val');
+
+  } else {
+
+    display.classList.remove('has-val');
+
+  }
+
+}
+
+// ===== SUBMIT ANSWER =====
+function submitAnswer() {
+
+  if (!currentAnswer) return;
+
+  log(
+    'Submitting Answer: ' +
+    currentAnswer
+  );
+
+  const answerData = {
+    player: currentPlayer,
+    team: currentTeam,
+    answer: currentAnswer,
+    time: Date.now()
+  };
+
+  db.ref(
+    'rooms/' +
+    currentRoom +
+    '/answers'
+  )
+
+  .push(answerData)
+
+  .then(() => {
+
+    showCorrect();
+
+    currentAnswer = '';
+    updateAnswerDisplay();
+
+  })
+
+  .catch(err => {
+
+    log(
+      'Submit Failed: ' +
+      err.message,
+      '#f44336'
+    );
+
+  });
+
+}
+
+// ===== FEEDBACK =====
+function showCorrect() {
+
+  const overlay =
+    document.getElementById(
+      'correctOverlay'
+    );
+
+  overlay.style.display = 'flex';
+
+  setTimeout(() => {
+
+    overlay.style.display = 'none';
+
+  }, 1000);
+
+}
+
+function showWrong() {
+
+  const overlay =
+    document.getElementById(
+      'wrongOverlay'
+    );
+
+  overlay.style.display = 'flex';
+
+  setTimeout(() => {
+
+    overlay.style.display = 'none';
+
+  }, 1000);
+
+}
+
+// ===== ENTER KEY SUPPORT =====
+document
+  .getElementById('roomInput')
+  .addEventListener('keypress', e => {
+
+    if (e.key === 'Enter')
+      joinGame();
+
+  });
+
+document
+  .getElementById('nameInput')
+  .addEventListener('keypress', e => {
+
+    if (e.key === 'Enter')
+      joinGame();
+
+  });
+
+log('Player App Loaded 🚀');
+</script>
