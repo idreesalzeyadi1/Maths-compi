@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏆 Tug of War: Math Battle — Spectator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;700;900&display=swap');
+  :root { --blue:#1a73e8; --red:#e53935; --gold:#FFD600; --bg:#0d0d2b; --rope:#c8a96e; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Nunito',sans-serif; background:var(--bg); color:#fff; min-height:100vh; overflow-x:hidden; }
+
+  /* ===== SHARED ===== */
+  .game-title {
+    font-family:'Bangers',cursive; font-size:clamp(36px,8vw,80px); letter-spacing:4px; text-align:center;
+    background:linear-gradient(135deg,#FFD600,#ff6f00); -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 0 30px rgba(255,214,0,0.4));
+  }
+  .subtitle { font-size:18px; color:#aaa; text-align:center; letter-spacing:2px; text-transform:uppercase; }
+  .card {
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:20px;
+    padding:32px 40px; width:100%; max-width:520px; backdrop-filter:blur(10px);
+    display:flex; flex-direction:column; gap:16px;
+  }
+  .card h2 { font-family:'Bangers',cursive; font-size:28px; letter-spacing:2px; color:var(--gold); text-align:center; }
+  label { font-size:14px; color:#aaa; margin-bottom:4px; display:block; }
+  select, input {
+    width:100%; padding:12px 16px; border-radius:12px; border:2px solid rgba(255,255,255,0.15);
+    background:rgba(255,255,255,0.07); color:#fff; font-size:16px; font-family:'Nunito',sans-serif;
+    outline:none; transition:border-color 0.2s;
+  }
+  select:focus, input:focus { border-color:var(--gold); }
+  select option { background:#1a1a4e; }
+  .btn {
+    padding:14px 28px; border-radius:14px; border:none; font-family:'Bangers',cursive;
+    font-size:22px; letter-spacing:2px; cursor:pointer; transition:transform 0.1s,box-shadow 0.2s; width:100%;
+  }
+  .btn:active { transform:scale(0.97); }
+  .btn:disabled { background:#333 !important; color:#666 !important; cursor:not-allowed; box-shadow:none !important; }
+  .btn-gold { background:linear-gradient(135deg,#FFD600,#ff8f00); color:#0d0d2b; box-shadow:0 6px 24px rgba(255,214,0,0.35); }
+  .btn-gold:not(:disabled):hover { box-shadow:0 8px 32px rgba(255,214,0,0.5); }
+  .btn-green { background:linear-gradient(135deg,#43a047,#1b5e20); color:#fff; box-shadow:0 6px 24px rgba(67,160,71,0.4); }
+
+  /* ===== LOBBY ===== */
+  #lobby {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    min-height:100vh; gap:24px; padding:20px;
+    background:radial-gradient(ellipse at 50% 0%,#1a1a4e 0%,#0d0d2b 70%);
+  }
+
+  /* ===== WAITING ROOM ===== */
+  #waitingRoom {
+    display:none; flex-direction:column; align-items:center; justify-content:center;
+    min-height:100vh; gap:28px; padding:24px;
+    background:radial-gradient(ellipse at 50% 0%,#1a1a4e 0%,#0d0d2b 70%);
+  }
+
+  /* Big Room ID display for projector */
+  .room-id-projector {
+    text-align:center;
+    background:rgba(255,255,255,0.04);
+    border:2px dashed rgba(255,214,0,0.4);
+    border-radius:24px;
+    padding:28px 48px;
+    width:100%; max-width:520px;
+  }
+  .room-id-projector .label { font-size:14px; color:#aaa; letter-spacing:3px; text-transform:uppercase; margin-bottom:10px; }
+  .room-id-projector .rid {
+    font-family:'Bangers',cursive; font-size:clamp(64px,16vw,110px); letter-spacing:12px;
+    color:var(--gold); text-shadow:0 0 40px rgba(255,214,0,0.5); line-height:1;
+  }
+  .room-id-projector .hint { font-size:14px; color:#666; margin-top:10px; }
+
+  /* Team join cards */
+  .teams-waiting {
+    display:grid; grid-template-columns:1fr 1fr; gap:16px; width:100%; max-width:520px;
+  }
+  .team-wait-card {
+    border-radius:18px; padding:22px 16px; text-align:center;
+    transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    position:relative; overflow:hidden;
+  }
+  .team-wait-card.blue {
+    background:rgba(26,115,232,0.12); border:2px solid rgba(26,115,232,0.3);
+  }
+  .team-wait-card.red {
+    background:rgba(229,57,53,0.12); border:2px solid rgba(229,57,53,0.3);
+  }
+  .team-wait-card.joined.blue {
+    background:rgba(26,115,232,0.25); border:2px solid var(--blue);
+    box-shadow:0 0 24px rgba(26,115,232,0.3);
+  }
+  .team-wait-card.joined.red {
+    background:rgba(229,57,53,0.25); border:2px solid var(--red);
+    box-shadow:0 0 24px rgba(229,57,53,0.3);
+  }
+
+  .team-wait-card .tw-icon { font-size:40px; margin-bottom:10px; }
+  .team-wait-card .tw-name { font-family:'Bangers',cursive; font-size:20px; letter-spacing:2px; margin-bottom:8px; }
+  .team-wait-card.blue .tw-name { color:#64b5f6; }
+  .team-wait-card.red .tw-name { color:#ef9a9a; }
+
+  .join-status {
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:13px; font-weight:700; padding:5px 12px;
+    border-radius:20px; margin-top:4px;
+    background:rgba(255,255,255,0.07);
+    color:#666;
+    transition:all 0.3s;
+  }
+  .join-status .dot {
+    width:8px; height:8px; border-radius:50%; background:#444;
+    transition:all 0.3s;
+  }
+  .team-wait-card.joined .join-status {
+    background:rgba(76,175,80,0.2); color:#81c784;
+  }
+  .team-wait-card.joined .dot { background:#4caf50; box-shadow:0 0 8px #4caf50; }
+
+  /* Pulse animation for waiting */
+  @keyframes waitPulse {
+    0%,100% { opacity:0.5; transform:scale(1); }
+    50% { opacity:1; transform:scale(1.02); }
+  }
+  .team-wait-card:not(.joined) { animation:waitPulse 2s infinite; }
+
+  /* Player names list */
+  .player-names { font-size:12px; color:#aaa; margin-top:6px; min-height:16px; }
+
+  /* Join progress bar */
+  .join-progress {
+    width:100%; max-width:520px;
+    text-align:center;
+  }
+  .join-progress-text { font-size:14px; color:#888; margin-bottom:8px; }
+  .join-progress-bar {
+    height:6px; border-radius:3px; background:rgba(255,255,255,0.08);
+    overflow:hidden;
+  }
+  .join-progress-fill {
+    height:100%; border-radius:3px;
+    background:linear-gradient(90deg,var(--blue),var(--gold),var(--red));
+    transition:width 0.5s ease;
+    width:0%;
+  }
+
+  /* Start button area */
+  .start-area { width:100%; max-width:520px; display:flex; flex-direction:column; gap:10px; align-items:center; }
+  .both-joined-msg {
+    font-size:14px; color:#4caf50; text-align:center; font-weight:700;
+    display:none; animation:popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes popIn { from { transform:scale(0.5); opacity:0; } to { transform:scale(1); opacity:1; } }
+
+  /* countdown rings on start btn */
+  .btn-start-wrap { position:relative; width:100%; }
+
+  /* ===== GAME SCREEN ===== */
+  #gameScreen {
+    display:none; flex-direction:column; min-height:100vh;
+    background:linear-gradient(180deg,#0d1b3e 0%,#0d2b1a 100%);
+    position:relative; overflow:hidden;
+  }
+  .game-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 24px; background:rgba(0,0,0,0.4);
+    border-bottom:2px solid rgba(255,255,255,0.1);
+  }
+  .team-score-display { font-family:'Bangers',cursive; font-size:28px; letter-spacing:2px; display:flex; align-items:center; gap:12px; }
+  .score-blue { color:#64b5f6; }
+  .score-red { color:#ef9a9a; }
+  .score-sep { color:#555; font-size:20px; }
+  .timer-box {
+    background:rgba(255,255,255,0.1); border-radius:50%; width:60px; height:60px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Bangers',cursive; font-size:28px; color:var(--gold);
+    border:3px solid var(--gold); box-shadow:0 0 16px rgba(255,214,0,0.3);
+  }
+  .timer-box.danger { color:#f44336; border-color:#f44336; box-shadow:0 0 16px rgba(244,67,54,0.5); animation:pulse 0.5s infinite alternate; }
+  @keyframes pulse { to { transform:scale(1.08); } }
+  .rope-arena { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; position:relative; }
+  .ground { position:absolute; bottom:0; left:0; right:0; height:120px; background:linear-gradient(180deg,#2e7d32 0%,#1b5e20 100%); border-top:4px solid #43a047; }
+  .ground::before { content:''; position:absolute; top:-2px; left:0; right:0; height:6px; background:repeating-linear-gradient(90deg,#66bb6a 0px,#66bb6a 20px,#43a047 20px,#43a047 40px); }
+  .center-line { position:absolute; bottom:60px; left:50%; transform:translateX(-50%); width:4px; height:80px; background:var(--gold); box-shadow:0 0 12px var(--gold); z-index:5; }
+  .rope-container { position:relative; width:100%; max-width:700px; height:80px; z-index:4; }
+  .rope-line { position:absolute; top:50%; left:0; right:0; height:18px; transform:translateY(-50%); border-radius:9px; background:repeating-linear-gradient(90deg,#c8a96e 0px,#c8a96e 12px,#a07850 12px,#a07850 24px); box-shadow:0 4px 12px rgba(0,0,0,0.5),inset 0 2px 4px rgba(255,255,255,0.2); }
+  .rope-flag { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); transition:left 0.6s cubic-bezier(0.34,1.56,0.64,1); z-index:6; }
+  .flag-marker { width:24px; height:48px; background:var(--gold); border-radius:4px; box-shadow:0 0 16px var(--gold); position:relative; }
+  .flag-marker::after { content:'🏁'; position:absolute; top:-8px; left:50%; transform:translateX(-50%); font-size:20px; }
+  .characters { position:absolute; bottom:110px; left:0; right:0; display:flex; justify-content:space-between; padding:0 40px; z-index:3; }
+  .team-chars { display:flex; align-items:flex-end; }
+  .char { font-size:44px; line-height:1; filter:drop-shadow(0 4px 8px rgba(0,0,0,0.5)); animation:tug 0.4s infinite alternate ease-in-out; transform-origin:bottom center; }
+  .team-red .char { animation-name:tug-red; }
+  @keyframes tug { 0%{transform:rotate(-3deg) translateY(0)} 100%{transform:rotate(3deg) translateY(-4px)} }
+  @keyframes tug-red { 0%{transform:rotate(3deg) translateY(0) scaleX(-1)} 100%{transform:rotate(-3deg) translateY(-4px) scaleX(-1)} }
+  .questions-row { display:grid; grid-template-columns:1fr auto 1fr; gap:16px; width:100%; max-width:900px; margin-top:16px; z-index:10; position:relative; }
+  .q-panel { border-radius:16px; padding:16px 20px; text-align:center; }
+  .q-panel.blue { background:rgba(26,115,232,0.25); border:2px solid var(--blue); }
+  .q-panel.red { background:rgba(229,57,53,0.25); border:2px solid var(--red); }
+  .q-panel .team-label { font-family:'Bangers',cursive; font-size:18px; letter-spacing:2px; margin-bottom:8px; }
+  .q-panel.blue .team-label { color:#64b5f6; }
+  .q-panel.red .team-label { color:#ef9a9a; }
+  .q-text { font-size:clamp(22px,4vw,34px); font-weight:900; color:#fff; margin-bottom:8px; }
+  .answer-status { font-size:13px; color:#888; min-height:20px; }
+  .answer-status.correct { color:#4caf50; font-weight:700; }
+  .answer-status.wrong { color:#f44336; font-weight:700; }
+  .vs-badge { display:flex; align-items:center; justify-content:center; font-family:'Bangers',cursive; font-size:36px; color:var(--gold); text-shadow:0 0 20px var(--gold); }
+  #roundResult { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:100; align-items:center; justify-content:center; flex-direction:column; gap:20px; backdrop-filter:blur(6px); }
+  .result-card { background:linear-gradient(135deg,#1a1a4e,#0d0d2b); border:3px solid var(--gold); border-radius:24px; padding:40px 60px; text-align:center; box-shadow:0 0 60px rgba(255,214,0,0.3); animation:popIn 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+  .result-emoji { font-size:72px; margin-bottom:12px; }
+  .result-title { font-family:'Bangers',cursive; font-size:48px; letter-spacing:3px; }
+  .result-sub { color:#aaa; font-size:16px; margin-top:8px; }
+  #winnerScreen { display:none; position:fixed; inset:0; z-index:200; background:radial-gradient(ellipse at center,#1a1a4e 0%,#0d0d2b 100%); align-items:center; justify-content:center; flex-direction:column; text-align:center; gap:20px; }
+  .winner-trophy { font-size:120px; animation:bounce 0.6s infinite alternate; }
+  @keyframes bounce { to { transform:translateY(-20px) scale(1.1); } }
+  .winner-name { font-family:'Bangers',cursive; font-size:clamp(48px,12vw,100px); letter-spacing:4px; }
+  .winner-name.blue { color:#64b5f6; text-shadow:0 0 40px #1a73e8; }
+  .winner-name.red { color:#ef9a9a; text-shadow:0 0 40px #e53935; }
+  .confetti { position:fixed; inset:0; pointer-events:none; z-index:201; }
+  .score-bar-wrap { width:100%; max-width:700px; margin-top:12px; position:relative; z-index:10; }
+  .score-bar-track { height:20px; border-radius:10px; background:rgba(255,255,255,0.1); overflow:hidden; position:relative; }
+  .score-bar-fill { position:absolute; top:0; left:0; bottom:0; width:50%; background:linear-gradient(90deg,var(--blue),#64b5f6); border-radius:10px; transition:width 0.6s cubic-bezier(0.34,1.56,0.64,1); }
+  .score-bar-labels { display:flex; justify-content:space-between; font-size:13px; color:#aaa; margin-top:4px; }
+  .round-dots { display:flex; gap:8px; align-items:center; }
+  .round-dot { width:12px; height:12px; border-radius:50%; background:#333; transition:background 0.3s; }
+  .round-dot.blue-win { background:var(--blue); box-shadow:0 0 8px var(--blue); }
+  .round-dot.red-win { background:var(--red); box-shadow:0 0 8px var(--red); }
+  .share-hint { position:fixed; bottom:16px; right:16px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:12px; padding:10px 16px; font-size:13px; color:#888; backdrop-filter:blur(6px); }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+  .shake { animation:shake 0.4s; }
+  @keyframes correctPop { 0%{transform:scale(1)} 50%{transform:scale(1.15)} 100%{transform:scale(1)} }
+  .correct-pop { animation:correctPop 0.3s; }
+</style>
+</head>
+<body>
+
+<!-- ===== LOBBY ===== -->
+<div id="lobby">
+  <div class="game-title">🪢 TUG OF WAR</div>
+  <div class="subtitle">Mathematics Battle — Spectator View</div>
+  <div class="card">
+    <h2>⚙️ GAME SETTINGS</h2>
+    <div>
+      <label>Subject / Difficulty</label>
+      <select id="difficultySelect">
+        <option value="addition_easy">➕ Addition (Easy — 1 digit)</option>
+        <option value="addition_medium" selected>➕ Addition (Medium — 2 digit)</option>
+        <option value="addition_hard">➕ Addition (Hard — 3 digit)</option>
+        <option value="subtraction_easy">➖ Subtraction (Easy)</option>
+        <option value="subtraction_medium">➖ Subtraction (Medium)</option>
+        <option value="multiplication_easy">✖️ Multiplication (Tables 1–5)</option>
+        <option value="multiplication_medium">✖️ Multiplication (Tables 1–10)</option>
+        <option value="mixed">🎲 Mixed (All Operations)</option>
+      </select>
+    </div>
+    <div>
+      <label>Rounds (Best of)</label>
+      <select id="roundsSelect">
+        <option value="3">Best of 3</option>
+        <option value="5" selected>Best of 5</option>
+        <option value="7">Best of 7</option>
+      </select>
+    </div>
+    <div>
+      <label>Time per question (seconds)</label>
+      <select id="timerSelect">
+        <option value="10">10 seconds</option>
+        <option value="15" selected>15 seconds</option>
+        <option value="20">20 seconds</option>
+        <option value="30">30 seconds</option>
+      </select>
+    </div>
+    <div>
+      <label>Team 1 Name</label>
+      <input type="text" id="team1Name" placeholder="Team Blue" value="Team Blue" maxlength="16">
+    </div>
+    <div>
+      <label>Team 2 Name</label>
+      <input type="text" id="team2Name" placeholder="Team Red" value="Team Red" maxlength="16">
+    </div>
+    <button class="btn btn-gold" onclick="createRoom()">🎮 CREATE ROOM</button>
+  </div>
+</div>
+
+<!-- ===== WAITING ROOM ===== -->
+<div id="waitingRoom">
+  <div class="game-title" style="font-size:clamp(28px,6vw,52px)">🪢 TUG OF WAR</div>
+
+  <!-- Big room ID for projector -->
+  <div class="room-id-projector">
+    <div class="label">📱 Students: Open player file & enter Room ID</div>
+    <div class="rid" id="wrRoomId">——</div>
+    <div class="hint">Ask your teacher which team you're on</div>
+  </div>
+
+  <!-- Team status cards -->
+  <div class="teams-waiting">
+    <div class="team-wait-card blue" id="twCard1">
+      <div class="tw-icon">💙</div>
+      <div class="tw-name" id="twName1">Team Blue</div>
+      <div class="join-status">
+        <div class="dot"></div>
+        <span id="twStatus1">Waiting...</span>
+      </div>
+      <div class="player-names" id="twPlayers1"></div>
+    </div>
+    <div class="team-wait-card red" id="twCard2">
+      <div class="tw-icon">❤️</div>
+      <div class="tw-name" id="twName2">Team Red</div>
+      <div class="join-status">
+        <div class="dot"></div>
+        <span id="twStatus2">Waiting...</span>
+      </div>
+      <div class="player-names" id="twPlayers2"></div>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="join-progress">
+    <div class="join-progress-text" id="joinProgressText">0 / 2 teams joined</div>
+    <div class="join-progress-bar"><div class="join-progress-fill" id="joinProgressFill"></div></div>
+  </div>
+
+  <!-- Start area -->
+  <div class="start-area">
+    <div class="both-joined-msg" id="bothJoinedMsg">🎉 Both teams ready! Start the match!</div>
+    <button class="btn btn-green" id="startMatchBtn" onclick="startMatch()" disabled>
+      ⚡ START MATCH
+    </button>
+    <div style="font-size:12px;color:#555">Both teams must join before match can start</div>
+  </div>
+</div>
+
+<!-- ===== GAME SCREEN ===== -->
+<div id="gameScreen">
+  <div class="game-header">
+    <div class="team-score-display">
+      <span class="score-blue" id="hdrBlue">Team Blue</span>
+      <span class="score-sep"> · </span>
+      <span id="hdrScore" style="color:#fff">0 — 0</span>
+      <span class="score-sep"> · </span>
+      <span class="score-red" id="hdrRed">Team Red</span>
+    </div>
+    <div class="round-dots" id="roundDots"></div>
+    <div class="timer-box" id="timerBox">15</div>
+  </div>
+  <div class="rope-arena">
+    <div class="ground"></div>
+    <div class="center-line"></div>
+    <div class="characters">
+      <div class="team-chars team-blue">
+        <span class="char">🧑</span>
+        <span class="char" style="animation-delay:0.15s">👦</span>
+      </div>
+      <div class="team-chars team-red">
+        <span class="char" style="animation-delay:0.1s">👧</span>
+        <span class="char" style="animation-delay:0.25s">🧒</span>
+      </div>
+    </div>
+    <div class="rope-container" id="ropeContainer">
+      <div class="rope-line"></div>
+      <div class="rope-flag" id="ropeFlag"><div class="flag-marker"></div></div>
+    </div>
+    <div class="score-bar-wrap">
+      <div class="score-bar-track"><div class="score-bar-fill" id="scoreBarFill"></div></div>
+      <div class="score-bar-labels">
+        <span id="barLabelBlue">Team Blue — 0 pts</span>
+        <span id="barLabelRed">Team Red — 0 pts</span>
+      </div>
+    </div>
+    <div class="questions-row">
+      <div class="q-panel blue">
+        <div class="team-label" id="q1Label">TEAM BLUE</div>
+        <div class="q-text" id="q1Text">—</div>
+        <div class="answer-status" id="q1Status">Waiting for answer...</div>
+      </div>
+      <div class="vs-badge">VS</div>
+      <div class="q-panel red">
+        <div class="team-label" id="q2Label">TEAM RED</div>
+        <div class="q-text" id="q2Text">—</div>
+        <div class="answer-status" id="q2Status">Waiting for answer...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Round Result -->
+<div id="roundResult">
+  <div class="result-card">
+    <div class="result-emoji" id="resultEmoji">🎉</div>
+    <div class="result-title" id="resultTitle">ROUND WIN!</div>
+    <div class="result-sub" id="resultSub">Next round starting...</div>
+  </div>
+</div>
+
+<!-- Winner Screen -->
+<div id="winnerScreen">
+  <canvas class="confetti" id="confettiCanvas"></canvas>
+  <div class="winner-trophy">🏆</div>
+  <div class="winner-name" id="winnerName">TEAM BLUE</div>
+  <div style="font-size:24px;color:#aaa;margin-top:8px">WINS THE MATCH!</div>
+  <button class="btn btn-gold" style="max-width:300px;margin-top:24px" onclick="location.reload()">🔄 PLAY AGAIN</button>
+</div>
+
+<div class="share-hint" id="shareHint" style="display:none">
+  📱 Room: <strong id="shareRoomId"></strong>
+</div>
+
+<script>
+let state = {
+  roomId: '',
+  difficulty: 'addition_medium',
+  totalRounds: 5,
+  questionTime: 15,
+  team1: 'Team Blue',
+  team2: 'Team Red',
+  scores: { blue: 0, red: 0 },
+  currentRound: 1,
+  ropePos: 50,
+  q1: null, q2: null,
+  phase: 'lobby',
+  timerVal: 15,
+  team1Answered: false, team2Answered: false,
+  team1Correct: false, team2Correct: false,
+};
+
+let timerInterval = null;
+let channel = null;
+let team1Joined = false, team2Joined = false;
+let team1Players = [], team2Players = [];
+
+function genRoomId() {
+  return Math.random().toString(36).substr(2, 6).toUpperCase();
+}
+
+function genQuestion(diff) {
+  const r = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+  let a, b, op, ans;
+  switch(diff) {
+    case 'addition_easy':    a=r(1,9);   b=r(1,9);   op='+'; ans=a+b; break;
+    case 'addition_medium':  a=r(10,99); b=r(10,99); op='+'; ans=a+b; break;
+    case 'addition_hard':    a=r(100,999); b=r(100,999); op='+'; ans=a+b; break;
+    case 'subtraction_easy': b=r(1,9);   a=r(b,9);   op='−'; ans=a-b; break;
+    case 'subtraction_medium': b=r(10,50); a=r(b,99); op='−'; ans=a-b; break;
+    case 'multiplication_easy': a=r(1,5); b=r(1,10); op='×'; ans=a*b; break;
+    case 'multiplication_medium': a=r(2,10); b=r(2,10); op='×'; ans=a*b; break;
+    case 'mixed': return genQuestion(['addition_medium','subtraction_medium','multiplication_easy'][r(0,2)]);
+    default: a=r(10,99); b=r(10,99); op='+'; ans=a+b;
+  }
+  return { a, b, op, ans, text: `${a} ${op} ${b} = ?` };
+}
+
+function broadcast(type, payload={}) {
+  if (channel) channel.postMessage({ type, payload, roomId: state.roomId });
+  localStorage.setItem('tow_msg_'+state.roomId, JSON.stringify({ type, payload, ts: Date.now() }));
+}
+
+function setupChannel() {
+  channel = new BroadcastChannel('tug_of_war_' + state.roomId);
+  channel.onmessage = (ev) => handleMessage(ev.data);
+}
+
+window.addEventListener('storage', (ev) => {
+  if (!state.roomId) return;
+  if (ev.key === 'tow_join_' + state.roomId && ev.newValue) {
+    try { const d=JSON.parse(ev.newValue); onTeamJoin(d.team, d.name); } catch(e){}
+  }
+  if (ev.key === 'tow_answer_' + state.roomId + '_1' && ev.newValue) {
+    try { receiveAnswer(1, JSON.parse(ev.newValue)); } catch(e){}
+  }
+  if (ev.key === 'tow_answer_' + state.roomId + '_2' && ev.newValue) {
+    try { receiveAnswer(2, JSON.parse(ev.newValue)); } catch(e){}
+  }
+});
+
+// ===== WAITING ROOM: detect joins =====
+function onTeamJoin(team, name) {
+  if (team === 1) {
+    team1Joined = true;
+    if (!team1Players.includes(name)) team1Players.push(name);
+  }
+  if (team === 2) {
+    team2Joined = true;
+    if (!team2Players.includes(name)) team2Players.push(name);
+  }
+  updateWaitingUI();
+}
+
+function updateWaitingUI() {
+  const joined = (team1Joined ? 1 : 0) + (team2Joined ? 1 : 0);
+
+  // Team 1 card
+  if (team1Joined) {
+    document.getElementById('twCard1').classList.add('joined');
+    document.getElementById('twStatus1').textContent = 'JOINED ✅';
+    document.getElementById('twPlayers1').textContent = team1Players.join(', ');
+  }
+  // Team 2 card
+  if (team2Joined) {
+    document.getElementById('twCard2').classList.add('joined');
+    document.getElementById('twStatus2').textContent = 'JOINED ✅';
+    document.getElementById('twPlayers2').textContent = team2Players.join(', ');
+  }
+
+  // Progress
+  document.getElementById('joinProgressText').textContent = `${joined} / 2 teams joined`;
+  document.getElementById('joinProgressFill').style.width = (joined * 50) + '%';
+
+  // Both joined
+  if (team1Joined && team2Joined) {
+    document.getElementById('bothJoinedMsg').style.display = 'block';
+    const btn = document.getElementById('startMatchBtn');
+    btn.disabled = false;
+    btn.style.animation = 'pulse 0.8s infinite alternate';
+  }
+}
+
+// Poll joins (for same-device tab scenario)
+setInterval(() => {
+  if (state.phase !== 'lobby' || !state.roomId) return;
+  const raw = localStorage.getItem('tow_join_' + state.roomId);
+  if (raw) {
+    try { const d=JSON.parse(raw); onTeamJoin(d.team, d.name); } catch(e){}
+  }
+}, 500);
+
+// ===== CREATE ROOM → go to waiting room =====
+function createRoom() {
+  state.roomId = genRoomId();
+  state.difficulty = document.getElementById('difficultySelect').value;
+  state.totalRounds = parseInt(document.getElementById('roundsSelect').value);
+  state.questionTime = parseInt(document.getElementById('timerSelect').value);
+  state.team1 = document.getElementById('team1Name').value || 'Team Blue';
+  state.team2 = document.getElementById('team2Name').value || 'Team Red';
+  state.timerVal = state.questionTime;
+  state.phase = 'lobby';
+
+  localStorage.setItem('tow_room_' + state.roomId, JSON.stringify({
+    roomId: state.roomId,
+    difficulty: state.difficulty,
+    team1: state.team1,
+    team2: state.team2,
+    questionTime: state.questionTime,
+    totalRounds: state.totalRounds,
+  }));
+  localStorage.removeItem('tow_answer_' + state.roomId + '_1');
+  localStorage.removeItem('tow_answer_' + state.roomId + '_2');
+  localStorage.removeItem('tow_join_' + state.roomId);
+
+  setupChannel();
+
+  // Update waiting room UI
+  document.getElementById('wrRoomId').textContent = state.roomId;
+  document.getElementById('twName1').textContent = state.team1;
+  document.getElementById('twName2').textContent = state.team2;
+  document.getElementById('shareRoomId').textContent = state.roomId;
+
+  document.getElementById('lobby').style.display = 'none';
+  document.getElementById('waitingRoom').style.display = 'flex';
+  document.getElementById('shareHint').style.display = 'block';
+}
+
+// ===== START MATCH (teacher presses button) =====
+function startMatch() {
+  if (!team1Joined || !team2Joined) return;
+
+  document.getElementById('waitingRoom').style.display = 'none';
+  document.getElementById('gameScreen').style.display = 'flex';
+
+  updateHeader();
+  buildRoundDots();
+  startRound();
+}
+
+function handleMessage(msg) {
+  if (msg.roomId !== state.roomId) return;
+  if (msg.type === 'ANSWER') receiveAnswer(msg.payload.team, msg.payload);
+}
+
+function startRound() {
+  state.phase = 'playing';
+  state.team1Answered = state.team2Answered = false;
+  state.team1Correct = state.team2Correct = false;
+  state.timerVal = state.questionTime;
+  state.q1 = genQuestion(state.difficulty);
+  state.q2 = genQuestion(state.difficulty);
+
+  localStorage.removeItem('tow_answer_' + state.roomId + '_1');
+  localStorage.removeItem('tow_answer_' + state.roomId + '_2');
+
+  updateQuestionDisplay();
+  updateRopePos();
+  startTimer();
+
+  const roundData = {
+    round: state.currentRound,
+    q1: { text: state.q1.text, ans: state.q1.ans },
+    q2: { text: state.q2.text, ans: state.q2.ans },
+    time: state.questionTime,
+    team1: state.team1,
+    team2: state.team2,
+    ts: Date.now(),
+  };
+  broadcast('NEW_ROUND', roundData);
+  localStorage.setItem('tow_round_' + state.roomId, JSON.stringify(roundData));
+}
+
+function updateQuestionDisplay() {
+  document.getElementById('q1Label').textContent = state.team1;
+  document.getElementById('q2Label').textContent = state.team2;
+  document.getElementById('q1Text').textContent = state.q1 ? state.q1.text : '—';
+  document.getElementById('q2Text').textContent = state.q2 ? state.q2.text : '—';
+  document.getElementById('q1Status').textContent = 'Waiting for answer...';
+  document.getElementById('q1Status').className = 'answer-status';
+  document.getElementById('q2Status').textContent = 'Waiting for answer...';
+  document.getElementById('q2Status').className = 'answer-status';
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  const box = document.getElementById('timerBox');
+  box.textContent = state.timerVal;
+  box.className = 'timer-box';
+  timerInterval = setInterval(() => {
+    state.timerVal--;
+    box.textContent = state.timerVal;
+    if (state.timerVal <= 5) box.className = 'timer-box danger';
+    if (state.timerVal <= 0) { clearInterval(timerInterval); resolveRound(); }
+  }, 1000);
+}
+
+function receiveAnswer(team, payload) {
+  if (state.phase !== 'playing') return;
+  const isCorrect = payload.correct;
+  if (team === 1 && !state.team1Answered) {
+    state.team1Answered = true; state.team1Correct = isCorrect;
+    const el = document.getElementById('q1Status');
+    el.textContent = isCorrect ? '✅ Correct!' : '❌ Wrong!';
+    el.className = 'answer-status ' + (isCorrect ? 'correct' : 'wrong');
+    document.getElementById('q1Text').classList.add(isCorrect ? 'correct-pop' : 'shake');
+    setTimeout(() => { document.getElementById('q1Text').className = 'q-text'; }, 500);
+  }
+  if (team === 2 && !state.team2Answered) {
+    state.team2Answered = true; state.team2Correct = isCorrect;
+    const el = document.getElementById('q2Status');
+    el.textContent = isCorrect ? '✅ Correct!' : '❌ Wrong!';
+    el.className = 'answer-status ' + (isCorrect ? 'correct' : 'wrong');
+    document.getElementById('q2Text').classList.add(isCorrect ? 'correct-pop' : 'shake');
+    setTimeout(() => { document.getElementById('q2Text').className = 'q-text'; }, 500);
+  }
+  if (state.team1Answered && state.team2Answered) {
+    clearInterval(timerInterval); setTimeout(resolveRound, 400);
+  }
+}
+
+function resolveRound() {
+  if (state.phase !== 'playing') return;
+  state.phase = 'roundEnd';
+  clearInterval(timerInterval);
+  const b = state.team1Correct ? 1 : 0;
+  const r = state.team2Correct ? 1 : 0;
+  let winner = null;
+  if (b > r) { state.scores.blue++; state.ropePos = Math.max(0, state.ropePos - 15); winner = 'blue'; }
+  else if (r > b) { state.scores.red++; state.ropePos = Math.min(100, state.ropePos + 15); winner = 'red'; }
+  updateRopePos(); updateHeader(); buildRoundDots(winner);
+  const winsNeeded = Math.ceil(state.totalRounds / 2);
+  if (state.scores.blue >= winsNeeded || state.scores.red >= winsNeeded) { setTimeout(showWinner, 800); return; }
+  const overlay = document.getElementById('roundResult');
+  const emoji = document.getElementById('resultEmoji');
+  const title = document.getElementById('resultTitle');
+  const sub = document.getElementById('resultSub');
+  if (winner === 'blue') { emoji.textContent='💙'; title.textContent=state.team1+' WINS ROUND!'; title.style.color='#64b5f6'; }
+  else if (winner === 'red') { emoji.textContent='❤️'; title.textContent=state.team2+' WINS ROUND!'; title.style.color='#ef9a9a'; }
+  else { emoji.textContent='🤝'; title.textContent='DRAW!'; title.style.color='#FFD600'; }
+  sub.textContent = `Round ${state.currentRound} of ${state.totalRounds} — Next round in 3s...`;
+  overlay.style.display = 'flex';
+  let cd = 3;
+  const cdi = setInterval(() => {
+    cd--;
+    sub.textContent = `Round ${state.currentRound} of ${state.totalRounds} — Next round in ${cd}s...`;
+    if (cd <= 0) { clearInterval(cdi); overlay.style.display='none'; state.currentRound++; startRound(); }
+  }, 1000);
+}
+
+function updateRopePos() {
+  document.getElementById('ropeFlag').style.left = state.ropePos + '%';
+  document.getElementById('scoreBarFill').style.width = Math.max(4, Math.min(96, 50 + (state.scores.blue - state.scores.red) * 15)) + '%';
+  document.getElementById('barLabelBlue').textContent = `${state.team1} — ${state.scores.blue} pts`;
+  document.getElementById('barLabelRed').textContent = `${state.team2} — ${state.scores.red} pts`;
+}
+
+function updateHeader() {
+  document.getElementById('hdrBlue').textContent = state.team1;
+  document.getElementById('hdrRed').textContent = state.team2;
+  document.getElementById('hdrScore').textContent = `${state.scores.blue} — ${state.scores.red}`;
+}
+
+function buildRoundDots(lastWinner) {
+  const container = document.getElementById('roundDots');
+  container.innerHTML = '';
+  const needed = Math.ceil(state.totalRounds / 2);
+  for (let i=0;i<needed;i++) { const d=document.createElement('div'); d.className='round-dot'+(i<state.scores.blue?' blue-win':''); container.appendChild(d); }
+  const sep=document.createElement('div'); sep.style.cssText='width:2px;height:20px;background:#555;border-radius:2px;margin:0 4px'; container.appendChild(sep);
+  for (let i=0;i<needed;i++) { const d=document.createElement('div'); d.className='round-dot'+(i<state.scores.red?' red-win':''); container.appendChild(d); }
+}
+
+function showWinner() {
+  const isBlue = state.scores.blue >= state.scores.red;
+  document.getElementById('winnerScreen').style.display = 'flex';
+  const wn = document.getElementById('winnerName');
+  wn.textContent = (isBlue ? state.team1 : state.team2) + ' 🎉';
+  wn.className = 'winner-name ' + (isBlue ? 'blue' : 'red');
+  startConfetti();
+}
+
+function startConfetti() {
+  const canvas = document.getElementById('confettiCanvas');
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  const ctx = canvas.getContext('2d');
+  const colors = ['#FFD600','#1a73e8','#e53935','#4caf50','#ff9800','#9c27b0'];
+  const pieces = Array.from({length:200}, () => ({
+    x: Math.random()*canvas.width, y: Math.random()*-canvas.height,
+    r: Math.random()*8+4, d: Math.random()*5+2,
+    color: colors[Math.floor(Math.random()*colors.length)],
+    tilt: 0, tiltAngle: 0, tiltSpeed: Math.random()*0.1+0.05,
+  }));
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pieces.forEach(p => {
+      p.tiltAngle+=p.tiltSpeed; p.y+=p.d; p.tilt=Math.sin(p.tiltAngle)*12;
+      if(p.y>canvas.height){p.y=-10;p.x=Math.random()*canvas.width;}
+      ctx.beginPath(); ctx.lineWidth=p.r/2; ctx.strokeStyle=p.color;
+      ctx.moveTo(p.x+p.tilt+p.r/4,p.y); ctx.lineTo(p.x+p.tilt,p.y+p.tilt+p.r/4); ctx.stroke();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// Poll for answers during game
+setInterval(() => {
+  if (state.phase !== 'playing' || !state.roomId) return;
+  if (!state.team1Answered) { const raw=localStorage.getItem('tow_answer_'+state.roomId+'_1'); if(raw){try{receiveAnswer(1,JSON.parse(raw));}catch(e){}} }
+  if (!state.team2Answered) { const raw=localStorage.getItem('tow_answer_'+state.roomId+'_2'); if(raw){try{receiveAnswer(2,JSON.parse(raw));}catch(e){}} }
+}, 300);
+</script>
+</body>
+</html>
