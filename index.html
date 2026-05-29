@@ -1,122 +1,379 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>🪢 Tug of War — Math Battle</title>
+
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;700;900&display=swap');
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body {
-    font-family:'Nunito',sans-serif;
-    background:#0d0d2b;
-    color:#fff;
-    min-height:100vh;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:32px;
-    padding:24px;
-    background:radial-gradient(ellipse at 50% 0%,#1a1a4e 0%,#0d0d2b 70%);
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;700;900&display=swap');
+
+:root{
+  --g1:#0d4a0d;
+  --g2:#1a7a1a;
+  --g3:#25a825;
+  --g4:#52cc52;
+  --gold:#FFD600;
+  --gold2:#ff9500;
+  --dark:#050f05;
+}
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+}
+
+body{
+  font-family:'Nunito',sans-serif;
+  background:var(--dark);
+  color:#fff;
+  min-height:100vh;
+
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+
+  padding:28px 20px;
+  overflow-x:hidden;
+
+  background:
+  radial-gradient(ellipse at 50% 0%,#0d2e0d 0%,#050f05 70%);
+}
+
+/* ===== LOGO ===== */
+
+.logo-wrap{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  margin-bottom:18px;
+}
+
+.school-logo{
+  width:105px;
+  height:105px;
+  border-radius:50%;
+  object-fit:cover;
+
+  border:4px solid var(--g3);
+
+  box-shadow:
+  0 0 0 6px rgba(37,168,37,0.12),
+  0 0 45px rgba(37,168,37,0.55);
+
+  animation:logoPulse 3s infinite;
+}
+
+@keyframes logoPulse{
+  0%,100%{
+    box-shadow:
+    0 0 0 6px rgba(37,168,37,0.12),
+    0 0 45px rgba(37,168,37,0.4);
   }
-  .title {
-    font-family:'Bangers',cursive;
-    font-size:clamp(40px,10vw,80px);
-    letter-spacing:4px;
-    text-align:center;
-    background:linear-gradient(135deg,#FFD600,#ff6f00);
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-    filter:drop-shadow(0 0 30px rgba(255,214,0,0.4));
+
+  50%{
+    box-shadow:
+    0 0 0 10px rgba(37,168,37,0.08),
+    0 0 65px rgba(37,168,37,0.7);
   }
-  .subtitle {
-    font-size:16px;
-    color:#888;
-    text-align:center;
-    letter-spacing:2px;
-    text-transform:uppercase;
-    margin-top:-20px;
+}
+
+.school-name{
+  margin-top:12px;
+  font-size:11px;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  color:#2f8d2f;
+  text-align:center;
+  font-weight:900;
+}
+
+/* ===== TITLE ===== */
+
+.title{
+  font-family:'Bangers',cursive;
+  font-size:clamp(44px,11vw,84px);
+  letter-spacing:5px;
+  text-align:center;
+  line-height:1;
+
+  background:linear-gradient(135deg,#FFD600,#ff9500);
+
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+
+  filter:drop-shadow(0 0 22px rgba(255,214,0,0.45));
+}
+
+.subtitle{
+  margin-top:2px;
+
+  font-size:12px;
+  color:#2a5a2a;
+
+  letter-spacing:3px;
+  text-transform:uppercase;
+  text-align:center;
+
+  margin-bottom:34px;
+}
+
+/* ===== CARDS ===== */
+
+.cards{
+  width:100%;
+  max-width:430px;
+
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+
+.card{
+  position:relative;
+  overflow:hidden;
+
+  display:flex;
+  align-items:center;
+  gap:18px;
+
+  padding:24px 22px;
+  border-radius:24px;
+
+  text-decoration:none;
+  color:#fff;
+
+  transition:all 0.2s ease;
+
+  backdrop-filter:blur(18px);
+
+  border:1px solid rgba(37,168,37,0.22);
+
+  background:
+  linear-gradient(
+    135deg,
+    rgba(13,74,13,0.68),
+    rgba(5,15,5,0.82)
+  );
+
+  box-shadow:
+  0 0 40px rgba(13,74,13,0.28);
+}
+
+.card::before{
+  content:'';
+
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+
+  height:3px;
+
+  background:
+  linear-gradient(
+    90deg,
+    var(--g1),
+    var(--g3),
+    var(--gold),
+    var(--g3),
+    var(--g1)
+  );
+}
+
+.card:hover{
+  transform:translateY(-4px);
+
+  box-shadow:
+  0 10px 42px rgba(37,168,37,0.22);
+}
+
+.card:active{
+  transform:scale(0.97);
+}
+
+/* ===== ICON ===== */
+
+.card-icon{
+  width:74px;
+  height:74px;
+
+  border-radius:18px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  font-size:38px;
+
+  flex-shrink:0;
+
+  background:
+  linear-gradient(
+    135deg,
+    rgba(37,168,37,0.18),
+    rgba(255,214,0,0.08)
+  );
+
+  border:2px solid rgba(37,168,37,0.18);
+
+  box-shadow:
+  inset 0 0 18px rgba(37,168,37,0.12),
+  0 0 16px rgba(37,168,37,0.12);
+}
+
+/* ===== TEXT ===== */
+
+.card-text{
+  flex:1;
+}
+
+.card-title{
+  font-family:'Bangers',cursive;
+  font-size:26px;
+  letter-spacing:2px;
+
+  margin-bottom:6px;
+
+  color:var(--gold);
+}
+
+.card-desc{
+  font-size:13px;
+  line-height:1.6;
+  color:#8eb38e;
+  font-weight:700;
+}
+
+/* ===== DIVIDER ===== */
+
+.divider{
+  display:flex;
+  align-items:center;
+  gap:12px;
+
+  width:100%;
+
+  color:#355835;
+
+  font-size:12px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  font-weight:800;
+}
+
+.divider::before,
+.divider::after{
+  content:'';
+  flex:1;
+  height:1px;
+
+  background:
+  linear-gradient(
+    90deg,
+    transparent,
+    rgba(37,168,37,0.3),
+    transparent
+  );
+}
+
+/* ===== MOBILE ===== */
+
+@media(max-width:480px){
+
+  .card{
+    padding:20px 18px;
   }
-  .cards {
-    display:flex;
-    flex-direction:column;
-    gap:16px;
-    width:100%;
-    max-width:420px;
+
+  .card-title{
+    font-size:23px;
   }
-  .card {
-    display:flex;
-    align-items:center;
-    gap:20px;
-    padding:24px 28px;
-    border-radius:20px;
-    text-decoration:none;
-    color:#fff;
-    transition:transform 0.15s, box-shadow 0.2s;
-    cursor:pointer;
+
+  .card-desc{
+    font-size:12px;
   }
-  .card:active { transform:scale(0.97); }
-  .card.spectator {
-    background:linear-gradient(135deg,rgba(255,214,0,0.15),rgba(255,143,0,0.1));
-    border:2px solid rgba(255,214,0,0.4);
+
+  .card-icon{
+    width:66px;
+    height:66px;
+    font-size:34px;
   }
-  .card.spectator:hover { box-shadow:0 8px 32px rgba(255,214,0,0.25); transform:translateY(-2px); }
-  .card.player {
-    background:linear-gradient(135deg,rgba(26,115,232,0.2),rgba(229,57,53,0.15));
-    border:2px solid rgba(100,181,246,0.3);
-  }
-  .card.player:hover { box-shadow:0 8px 32px rgba(26,115,232,0.25); transform:translateY(-2px); }
-  .card-icon { font-size:48px; flex-shrink:0; }
-  .card-text {}
-  .card-title {
-    font-family:'Bangers',cursive;
-    font-size:26px;
-    letter-spacing:2px;
-    margin-bottom:4px;
-  }
-  .card.spectator .card-title { color:#FFD600; }
-  .card.player .card-title { color:#64b5f6; }
-  .card-desc { font-size:13px; color:#aaa; line-height:1.5; }
-  .divider {
-    display:flex;
-    align-items:center;
-    gap:12px;
-    color:#444;
-    font-size:13px;
-    width:100%;
-    max-width:420px;
-  }
-  .divider::before, .divider::after {
-    content:'';
-    flex:1;
-    height:1px;
-    background:#333;
-  }
+}
 </style>
 </head>
+
 <body>
-  <div class="title">🪢 TUG OF WAR</div>
-  <div class="subtitle">Mathematics Battle</div>
 
-  <div class="cards">
-    <a class="card spectator" href="spectator.html">
-      <div class="card-icon">📺</div>
-      <div class="card-text">
-        <div class="card-title">SPECTATOR / TEACHER</div>
-        <div class="card-desc">Projector pe open karo — room banao, dono teams ka wait karo, phir match shuru karo</div>
-      </div>
-    </a>
+<!-- LOGO -->
+<div class="logo-wrap">
 
-    <div class="divider">ya</div>
+  <img
+    class="school-logo"
+    src="loho.jpg"
+    alt="School Logo"
+  >
 
-    <a class="card player" href="player.html">
-      <div class="card-icon">📱</div>
-      <div class="card-text">
-        <div class="card-title">STUDENT / PLAYER</div>
-        <div class="card-desc">Phone pe open karo — Room ID daal ke apni team join karo aur math solve karo!</div>
-      </div>
-    </a>
+  <div class="school-name">
+    THE MUSLIM COLLEGIATE SCHOOL
   </div>
+
+</div>
+
+<!-- TITLE -->
+<div class="title">MATH BATTLE</div>
+
+<div class="subtitle">
+  Cultivating Minds, Creating Change — Since 2022
+</div>
+
+<!-- CARDS -->
+<div class="cards">
+
+  <!-- SPECTATOR -->
+  <a class="card" href="spectator.html">
+
+    <div class="card-icon">📺</div>
+
+    <div class="card-text">
+
+      <div class="card-title">
+        SPECTATORS
+      </div>
+
+      <div class="card-desc">
+        Watch the battle 
+      </div>
+
+    </div>
+
+  </a>
+
+  <!-- DIVIDER -->
+  <div class="divider">OR</div>
+
+  <!-- PLAYER -->
+  <a class="card" href="player.html">
+
+    <div class="card-icon">📱</div>
+
+    <div class="card-text">
+
+      <div class="card-title">
+        PLAYER
+      </div>
+
+      <div class="card-desc">
+        Join the battle - using your room ID.
+      </div>
+
+    </div>
+
+  </a>
+
+</div>
+
 </body>
 </html>
