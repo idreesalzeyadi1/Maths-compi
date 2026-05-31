@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Quiz Battle — Admin Panel</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+:root{
+  --bg:#0a1f0a;
+  --surface:#111e11;
+  --surface2:#162416;
+  --green:#2ecc71;
+  --green2:#27ae60;
+  --gold:#f5c518;
+  --red:#e74c3c;
+  --border:#1e4a1e;
+  --text:#d4edda;
+  --muted:#4a7a4a;
+}
+
+body{
+  background:var(--bg);
+  font-family:'Nunito',sans-serif;
+  color:var(--text);
+  min-height:100vh;
+  background-image:radial-gradient(ellipse at 50% 0%,rgba(46,204,113,0.07) 0%,transparent 60%);
+}
+
+.header{
+  text-align:center;
+  padding:2rem 1rem 1.5rem;
+  border-bottom:1px solid var(--border);
+}
+.header-top{
+  display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:6px;
+}
+.logo{
+  width:52px;height:52px;border-radius:50%;
+  background:#fff;border:2px solid var(--green);
+  overflow:hidden;box-shadow:0 0 14px rgba(46,204,113,0.35);
+}
+.logo img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.header h1{
+  font-family:'Bangers',cursive;font-size:38px;letter-spacing:3px;
+  color:var(--gold);text-shadow:2px 2px 0 #7a5c00;
+}
+.header p{font-size:11px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;}
+
+.container{max-width:900px;margin:0 auto;padding:2rem 1.5rem;}
+
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:1.5rem;margin-bottom:1.5rem;
+}
+.card-title{
+  font-family:'Bangers',cursive;font-size:20px;letter-spacing:2px;
+  color:var(--green);margin-bottom:1.2rem;display:flex;align-items:center;gap:8px;
+}
+
+.form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:14px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+label{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+
+input,select{
+  background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-family:'Nunito',sans-serif;font-size:14px;
+  padding:10px 12px;outline:none;transition:border-color 0.2s;width:100%;
+}
+input:focus,select:focus{border-color:var(--green);}
+select option{background:var(--surface2);}
+
+.q-list{display:flex;flex-direction:column;gap:14px;margin-bottom:1.2rem;}
+.q-item{
+  background:var(--surface2);border:1px solid var(--border);border-radius:12px;
+  padding:1.2rem;position:relative;animation:slideIn 0.25s ease;
+}
+@keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.q-header{display:flex;align-items:center;gap:10px;margin-bottom:1rem;}
+.q-num{
+  background:var(--green);color:#0a1f0a;font-weight:800;font-size:13px;
+  width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.q-input{flex:1;}
+.q-delete{
+  background:rgba(231,76,60,0.15);border:1px solid rgba(231,76,60,0.3);color:var(--red);
+  border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s;white-space:nowrap;
+}
+.q-delete:hover{background:rgba(231,76,60,0.3);}
+.options-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.option-row{
+  display:flex;align-items:center;gap:8px;background:var(--bg);
+  border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;transition:border-color 0.2s,background 0.2s;
+}
+.option-row.correct{border-color:var(--green);background:rgba(46,204,113,0.08);}
+.option-row input[type="radio"]{width:16px;height:16px;flex-shrink:0;accent-color:var(--green);cursor:pointer;padding:0;}
+.option-row input[type="text"]{border:none;background:transparent;padding:0;font-size:13px;flex:1;}
+.option-label{font-size:12px;font-weight:800;color:var(--muted);width:18px;flex-shrink:0;}
+
+.btn{
+  display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:10px;
+  font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;cursor:pointer;border:none;transition:all 0.2s;letter-spacing:0.5px;
+}
+.btn-add{
+  background:rgba(46,204,113,0.12);border:1px solid rgba(46,204,113,0.35);
+  color:var(--green);width:100%;justify-content:center;font-size:15px;
+}
+.btn-add:hover{background:rgba(46,204,113,0.22);}
+.btn-create{
+  background:var(--green);color:#0a1f0a;font-size:16px;font-family:'Bangers',cursive;
+  letter-spacing:2px;width:100%;justify-content:center;padding:14px;font-size:18px;
+  box-shadow:0 0 20px rgba(46,204,113,0.3);
+}
+.btn-create:hover{background:#27ae60;transform:translateY(-2px);box-shadow:0 0 28px rgba(46,204,113,0.45);}
+
+/* MODAL */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.75);
+  display:none;align-items:center;justify-content:center;z-index:100;
+}
+.modal-overlay.show{display:flex;}
+.modal{
+  background:var(--surface);border:2px solid var(--green);border-radius:18px;
+  padding:2.5rem 2rem;text-align:center;max-width:380px;width:90%;
+  box-shadow:0 0 40px rgba(46,204,113,0.25);animation:popIn 0.3s ease;
+}
+@keyframes popIn{from{opacity:0;transform:scale(0.85)}to{opacity:1;transform:scale(1)}}
+.modal h2{font-family:'Bangers',cursive;font-size:28px;letter-spacing:3px;color:var(--gold);margin-bottom:0.5rem;}
+.modal p{font-size:13px;color:var(--muted);margin-bottom:1.5rem;}
+.room-code{
+  font-family:'Bangers',cursive;font-size:64px;letter-spacing:8px;color:var(--green);
+  text-shadow:0 0 20px rgba(46,204,113,0.4);margin:0.5rem 0 1.5rem;line-height:1;
+}
+.modal-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.btn-copy{
+  background:rgba(46,204,113,0.12);border:1px solid rgba(46,204,113,0.35);
+  color:var(--green);padding:10px 20px;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;transition:all 0.2s;
+}
+.btn-copy:hover{background:rgba(46,204,113,0.25);}
+.btn-close-modal{
+  background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--muted);
+  padding:10px 20px;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;transition:all 0.2s;
+}
+.btn-close-modal:hover{background:rgba(255,255,255,0.1);}
+
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--green);color:#0a1f0a;font-weight:700;font-size:13px;padding:10px 22px;
+  border-radius:20px;transition:transform 0.3s ease;z-index:200;pointer-events:none;
+}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.q-counter{font-size:12px;color:var(--muted);text-align:right;margin-bottom:10px;}
+.q-counter span{color:var(--green);font-weight:800;}
+
+/* ═══════════════════════════════════════
+   GAME OVER / RESULTS SCREEN
+═══════════════════════════════════════ */
+#gameOverScreen {
+  display:none;
+  position:fixed;inset:0;z-index:999;
+  background:#050f05;
+  overflow-y:auto;
+  animation:fadeInScreen 0.6s ease;
+}
+@keyframes fadeInScreen{from{opacity:0}to{opacity:1}}
+
+.go-bg-stars {
+  position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0;
+}
+.go-bg-stars::before {
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 0%, rgba(245,197,24,0.12) 0%, transparent 55%),
+             radial-gradient(ellipse at 20% 100%, rgba(46,204,113,0.08) 0%, transparent 50%);
+}
+
+.go-content {
+  position:relative;z-index:1;
+  max-width:560px;margin:0 auto;padding:2.5rem 1.5rem 4rem;
+  text-align:center;
+}
+
+/* Title */
+.go-title {
+  font-family:'Bangers',cursive;
+  font-size:48px;letter-spacing:6px;
+  color:var(--gold);
+  text-shadow:3px 3px 0 #5a3c00, 0 0 30px rgba(245,197,24,0.4);
+  margin-bottom:4px;
+  animation:titleDrop 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.2s both;
+}
+@keyframes titleDrop{from{opacity:0;transform:translateY(-30px) scale(0.8)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+.go-subtitle {
+  font-size:12px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;margin-bottom:2.5rem;
+}
+
+/* Champion Card */
+.champion-card {
+  background:linear-gradient(135deg, rgba(245,197,24,0.12), rgba(245,197,24,0.04));
+  border:2px solid rgba(245,197,24,0.5);
+  border-radius:20px;
+  padding:2rem 1.5rem 1.5rem;
+  margin-bottom:2rem;
+  position:relative;
+  overflow:hidden;
+  animation:cardRise 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.4s both;
+}
+@keyframes cardRise{from{opacity:0;transform:translateY(40px) scale(0.9)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+.champion-card::before {
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 0%, rgba(245,197,24,0.1) 0%, transparent 60%);
+  pointer-events:none;
+}
+
+/* Medal SVG */
+.medal-wrap {
+  margin-bottom:1.2rem;
+  position:relative;display:inline-block;
+}
+.medal-svg {
+  filter:drop-shadow(0 0 20px rgba(245,197,24,0.6));
+  animation:medalFloat 3s ease-in-out infinite;
+}
+@keyframes medalFloat{
+  0%,100%{transform:translateY(0) rotate(-2deg)}
+  50%{transform:translateY(-8px) rotate(2deg)}
+}
+
+.champ-label {
+  font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--gold);
+  opacity:0.7;margin-bottom:6px;
+}
+.champ-name {
+  font-family:'Bangers',cursive;font-size:42px;letter-spacing:3px;
+  color:#fff;text-shadow:0 0 20px rgba(255,255,255,0.3);
+  margin-bottom:8px;
+  word-break:break-word;
+}
+.champ-pts-wrap {
+  display:inline-flex;align-items:baseline;gap:6px;
+  background:rgba(0,0,0,0.3);border:1px solid rgba(245,197,24,0.3);
+  border-radius:30px;padding:6px 20px;
+}
+.champ-pts {
+  font-family:'Bangers',cursive;font-size:36px;color:var(--gold);
+  text-shadow:0 0 10px rgba(245,197,24,0.5);
+  animation:ptsCount 0.5s ease 1s both;
+}
+@keyframes ptsCount{from{opacity:0;transform:scale(1.4)}to{opacity:1;transform:scale(1)}}
+.champ-pts-label {
+  font-size:13px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;
+}
+
+/* Confetti burst */
+.confetti-row {
+  font-size:22px;margin-bottom:0.5rem;letter-spacing:4px;
+  animation:confettiFade 1s ease 0.8s both;
+}
+@keyframes confettiFade{from{opacity:0;transform:scale(0.5)}to{opacity:1;transform:scale(1)}}
+
+/* Leaderboard */
+.lb-card {
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  overflow:hidden;
+  animation:lbSlide 0.5s ease 0.7s both;
+}
+@keyframes lbSlide{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+
+.lb-header {
+  background:rgba(46,204,113,0.08);border-bottom:1px solid var(--border);
+  padding:12px 20px;
+  display:flex;align-items:center;gap:10px;
+}
+.lb-header-title {
+  font-family:'Bangers',cursive;font-size:20px;letter-spacing:3px;color:var(--green);
+}
+
+.lb-row {
+  display:flex;align-items:center;gap:14px;
+  padding:14px 20px;border-bottom:1px solid rgba(30,74,30,0.5);
+  transition:background 0.2s;
+  animation:rowIn 0.4s ease both;
+}
+.lb-row:last-child{border-bottom:none;}
+.lb-row:nth-child(1){animation-delay:0.8s;}
+.lb-row:nth-child(2){animation-delay:0.95s;}
+.lb-row:nth-child(3){animation-delay:1.1s;}
+@keyframes rowIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+.lb-rank {
+  font-family:'Bangers',cursive;font-size:22px;
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.lb-rank.r1{background:linear-gradient(135deg,#f5c518,#e6a800);color:#3a2800;box-shadow:0 0 12px rgba(245,197,24,0.5);}
+.lb-rank.r2{background:linear-gradient(135deg,#c0c0c0,#a0a0a0);color:#2a2a2a;}
+.lb-rank.r3{background:linear-gradient(135deg,#cd7f32,#a05a20);color:#2a1500;}
+.lb-rank.rx{background:rgba(255,255,255,0.07);color:var(--muted);font-size:16px;}
+
+.lb-medal-emoji{font-size:18px;flex-shrink:0;}
+.lb-name{flex:1;font-weight:700;font-size:15px;text-align:left;}
+.lb-score{
+  font-family:'Bangers',cursive;font-size:22px;color:var(--green);
+  min-width:50px;text-align:right;
+}
+.lb-score-label{font-size:11px;color:var(--muted);display:block;text-align:right;margin-top:-2px;}
+
+/* Play Again button */
+.go-actions {
+  margin-top:2rem;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;
+}
+.btn-playagain {
+  background:var(--green);color:#0a1f0a;padding:14px 32px;
+  border:none;border-radius:12px;font-family:'Bangers',cursive;
+  font-size:22px;letter-spacing:2px;cursor:pointer;
+  box-shadow:0 0 24px rgba(46,204,113,0.35);transition:all 0.2s;
+}
+.btn-playagain:hover{background:#27ae60;transform:translateY(-2px);}
+.btn-newroom {
+  background:rgba(255,255,255,0.05);color:var(--muted);padding:14px 32px;
+  border:1px solid var(--border);border-radius:12px;font-family:'Bangers',cursive;
+  font-size:22px;letter-spacing:2px;cursor:pointer;transition:all 0.2s;
+}
+.btn-newroom:hover{background:rgba(255,255,255,0.1);color:var(--text);}
+
+/* Sparkle animation for top 3 */
+@keyframes sparkle{
+  0%,100%{opacity:1}50%{opacity:0.3}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="logo"><img src="loho.jpg" alt="MCS"/></div>
+    <h1>Quiz Battle</h1>
+  </div>
+  <p>Admin Panel — Create Room</p>
+</div>
+
+<div class="container">
+
+  <!-- SETTINGS -->
+  <div class="card">
+    <div class="card-title"><span>⚙️</span> Game Settings</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Class / Level</label>
+        <select id="classSelect">
+          <option value="">-- Select Class --</option>
+          <option>Class 1</option><option>Class 2</option><option>Class 3</option>
+          <option>Class 4</option><option>Class 5</option><option>Class 6</option>
+          <option>Class 7</option><option>Class 8</option><option>Class 9</option><option>Class 10</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Subject / Category</label>
+        <select id="subjectSelect">
+          <option value="">-- Select Subject --</option>
+          <option>General Knowledge</option><option>Science</option><option>Islamiat</option>
+          <option>Mathematics</option><option>English</option><option>Urdu</option><option>Mixed</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Time per Question (sec)</label>
+        <input type="number" id="timerInput" min="5" max="120" value="15" placeholder="e.g. 15"/>
+      </div>
+      <div class="form-group">
+        <label>Max Players</label>
+        <input type="number" id="maxPlayers" min="2" max="50" value="10" placeholder="e.g. 10"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUESTIONS -->
+  <div class="card">
+    <div class="card-title"><span>❓</span> Questions</div>
+    <div class="q-counter">Total questions: <span id="qCount">0</span></div>
+    <div class="q-list" id="questionList"></div>
+    <button class="btn btn-add" onclick="addQuestion()">+ Add Question</button>
+  </div>
+
+  <button class="btn btn-create" onclick="createRoom()">🚀 Create Room &amp; Get Code</button>
+</div>
+
+<!-- ROOM CREATED MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2>Room Ready!</h2>
+    <p>Share this code with players &amp; spectators</p>
+    <div class="room-code" id="roomCodeDisplay">----</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:1rem;">
+      Class: <strong id="modalClass" style="color:var(--text)">—</strong> &nbsp;|&nbsp;
+      Subject: <strong id="modalSubject" style="color:var(--text)">—</strong> &nbsp;|&nbsp;
+      Timer: <strong id="modalTimer" style="color:var(--text)">—</strong>s &nbsp;|&nbsp;
+      Questions: <strong id="modalQCount" style="color:var(--text)">—</strong>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-copy" onclick="copyCode()">📋 Copy Code</button>
+      <button class="btn-close-modal" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONTROL PANEL -->
+<div id="controlPanel" style="display:none;position:fixed;inset:0;background:#050f05;z-index:50;overflow-y:auto;">
+  <div style="max-width:600px;margin:0 auto;padding:2rem 1.5rem;">
+
+    <div style="text-align:center;margin-bottom:1.5rem;">
+      <div style="font-family:'Bangers',cursive;font-size:14px;letter-spacing:4px;color:#2ecc71;margin-bottom:4px;">ADMIN CONTROL PANEL</div>
+      <div style="font-family:'Bangers',cursive;font-size:42px;letter-spacing:4px;color:#f5c518;text-shadow:2px 2px 0 #7a5c00;">QUIZ BATTLE</div>
+      <div style="display:inline-block;background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.3);border-radius:20px;padding:4px 16px;font-size:13px;color:#2ecc71;margin-top:6px;">
+        Room: <span id="cpRoomCode" style="font-family:'Bangers',cursive;font-size:18px;letter-spacing:2px;">----</span>
+      </div>
+    </div>
+
+    <div style="background:#111e11;border:1px solid #1e4a1e;border-radius:14px;padding:1.2rem;margin-bottom:1rem;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <span id="cpClass"   style="background:rgba(0,0,0,0.3);border:1px solid #1e4a1e;border-radius:20px;padding:4px 14px;font-size:13px;color:#4a7a4a;">—</span>
+      <span id="cpSubject" style="background:rgba(0,0,0,0.3);border:1px solid #1e4a1e;border-radius:20px;padding:4px 14px;font-size:13px;color:#4a7a4a;">—</span>
+      <span id="cpTimer"   style="background:rgba(0,0,0,0.3);border:1px solid #1e4a1e;border-radius:20px;padding:4px 14px;font-size:13px;color:#4a7a4a;">—</span>
+      <span id="cpQCount"  style="background:rgba(0,0,0,0.3);border:1px solid #1e4a1e;border-radius:20px;padding:4px 14px;font-size:13px;color:#4a7a4a;">—</span>
+    </div>
+
+    <div style="background:#111e11;border:1px solid #1e4a1e;border-radius:14px;padding:1.2rem;margin-bottom:1.2rem;">
+      <div style="font-family:'Bangers',cursive;font-size:18px;letter-spacing:2px;color:#2ecc71;margin-bottom:12px;">
+        PLAYERS JOINED &nbsp;<span id="cpPlayerCount" style="font-size:15px;color:#f5c518;">0</span>
+      </div>
+      <div id="cpPlayersList" style="display:flex;flex-direction:column;gap:6px;min-height:40px;">
+        <div style="font-size:13px;color:#2a4a2a;">Waiting for players to join...</div>
+      </div>
+    </div>
+
+    <button id="startBtn" onclick="startGame()"
+      style="width:100%;padding:18px;border:none;border-radius:14px;
+      background:linear-gradient(135deg,#25a825,#1a7a1a);color:#fff;
+      font-family:'Bangers',cursive;font-size:28px;letter-spacing:3px;
+      cursor:pointer;box-shadow:0 6px 28px rgba(37,168,37,0.4);
+      transition:all 0.2s;margin-bottom:10px;">
+      🚀 START GAME!
+    </button>
+
+    <div id="gameStatus" style="text-align:center;font-size:13px;color:#2a5a2a;min-height:20px;"></div>
+
+    <div id="qProgressWrap" style="display:none;margin-top:1rem;">
+      <div style="background:#111e11;border:1px solid #1e4a1e;border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Bangers',cursive;font-size:16px;letter-spacing:2px;color:#2ecc71;margin-bottom:10px;">LIVE SCORES</div>
+        <div id="liveScores" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     GAME OVER RESULTS SCREEN
+═══════════════════════════════════ -->
+<div id="gameOverScreen">
+  <div class="go-bg-stars"></div>
+  <div class="go-content">
+
+    <div class="go-title">GAME OVER!</div>
+    <div class="go-subtitle">Final Results</div>
+
+    <!-- Champion Card -->
+    <div class="champion-card">
+      <div class="confetti-row">🎉 🏆 🎉</div>
+
+      <!-- Medal SVG — exactly like your drawing! -->
+      <div class="medal-wrap">
+        <svg class="medal-svg" width="110" height="130" viewBox="0 0 110 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Ribbon left -->
+          <polygon points="55,10 30,55 45,55" fill="#e74c3c" opacity="0.9"/>
+          <!-- Ribbon right -->
+          <polygon points="55,10 80,55 65,55" fill="#c0392b" opacity="0.9"/>
+          <!-- Ribbon center notch -->
+          <polygon points="45,55 55,45 65,55" fill="#922b21"/>
+          <!-- Medal circle shadow -->
+          <circle cx="55" cy="90" r="36" fill="rgba(0,0,0,0.3)" transform="translate(3,4)"/>
+          <!-- Medal circle outer ring -->
+          <circle cx="55" cy="90" r="36" fill="url(#goldGrad)" stroke="#d4a017" stroke-width="2"/>
+          <!-- Medal circle inner -->
+          <circle cx="55" cy="90" r="26" fill="url(#goldInner)" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+          <!-- Number 1 -->
+          <text x="55" y="98" text-anchor="middle" font-family="Bangers,cursive" font-size="30" fill="#5a3000" font-weight="bold">1</text>
+          <!-- Shine -->
+          <ellipse cx="42" cy="76" rx="7" ry="4" fill="rgba(255,255,255,0.35)" transform="rotate(-30 42 76)"/>
+          <defs>
+            <radialGradient id="goldGrad" cx="40%" cy="30%">
+              <stop offset="0%" stop-color="#ffe066"/>
+              <stop offset="60%" stop-color="#f5c518"/>
+              <stop offset="100%" stop-color="#c8960c"/>
+            </radialGradient>
+            <radialGradient id="goldInner" cx="35%" cy="30%">
+              <stop offset="0%" stop-color="#fff0a0"/>
+              <stop offset="100%" stop-color="#e6ac00"/>
+            </radialGradient>
+          </defs>
+        </svg>
+      </div>
+
+      <div class="champ-label">🏆 CHAMPION</div>
+      <div class="champ-name" id="goChampName">—</div>
+      <div class="champ-pts-wrap">
+        <span class="champ-pts" id="goChampPts">0</span>
+        <span class="champ-pts-label">Total Points</span>
+      </div>
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="lb-card">
+      <div class="lb-header">
+        <span style="font-size:20px;">🏅</span>
+        <span class="lb-header-title">LEADERBOARD</span>
+      </div>
+      <div id="goLeaderboard">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
+    <div class="go-actions">
+      <button class="btn-playagain" onclick="location.reload()">🔄 NEW GAME</button>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast">Copied!</div>
+
+<script>
+let questions = [];
+
+function addQuestion() {
+  const id = Date.now();
+  questions.push({ id, q: '', opts: ['','','',''], correct: 0 });
+  renderQuestions();
+}
+
+function removeQuestion(id) {
+  questions = questions.filter(q => q.id !== id);
+  renderQuestions();
+}
+
+function renderQuestions() {
+  const list = document.getElementById('questionList');
+  document.getElementById('qCount').textContent = questions.length;
+  list.innerHTML = '';
+  questions.forEach((q, idx) => {
+    const div = document.createElement('div');
+    div.className = 'q-item';
+    div.innerHTML = `
+      <div class="q-header">
+        <div class="q-num">${idx+1}</div>
+        <input class="q-input" type="text" placeholder="Type your question here..." value="${esc(q.q)}"
+          oninput="questions[${idx}].q=this.value"/>
+        <button class="q-delete" onclick="removeQuestion(${q.id})">✕ Remove</button>
+      </div>
+      <div class="options-grid">
+        ${['A','B','C','D'].map((lbl,oi) => `
+          <label class="option-row ${q.correct===oi?'correct':''}" id="opt-${q.id}-${oi}">
+            <input type="radio" name="correct-${q.id}" ${q.correct===oi?'checked':''}
+              onchange="setCorrect(${idx},${oi})"/>
+            <span class="option-label">${lbl}</span>
+            <input type="text" placeholder="Option ${lbl}" value="${esc(q.opts[oi])}"
+              oninput="questions[${idx}].opts[${oi}]=this.value"/>
+          </label>
+        `).join('')}
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">✅ Select the radio button on the correct answer</div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function setCorrect(qIdx, optIdx) {
+  questions[qIdx].correct = optIdx;
+  renderQuestions();
+}
+
+function esc(str) {
+  return (str||'').replace(/"/g,'&quot;');
+}
+
+// ── FIREBASE ──
+const firebaseConfig = {
+  apiKey:"AIzaSyA8HVAmKLpv6YshzqN6boiLjDJ3MEDov3Y",
+  authDomain:"maths-compi.firebaseapp.com",
+  databaseURL:"https://maths-compi-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"maths-compi",
+  storageBucket:"maths-compi.firebasestorage.app",
+  messagingSenderId:"570914604597",
+  appId:"1:570914604597:web:96df45271bc58ef29d137c"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+let currentRoomRef = null;
+
+function generateCode() {
+  return Math.random().toString(36).substring(2,6).toUpperCase();
+}
+
+function createRoom() {
+  const cls   = document.getElementById('classSelect').value;
+  const subj  = document.getElementById('subjectSelect').value;
+  const timer = document.getElementById('timerInput').value;
+  const maxP  = document.getElementById('maxPlayers').value;
+
+  if (!cls)  { alert('Please select a Class!'); return; }
+  if (!subj) { alert('Please select a Subject!'); return; }
+  if (questions.length < 1) { alert('Add at least 1 question!'); return; }
+
+  const invalid = questions.find(q => !q.q.trim() || q.opts.some(o=>!o.trim()));
+  if (invalid) { alert('Please fill all question fields and all 4 options!'); return; }
+
+  const code = generateCode();
+  const qs = questions.map((q,i) => ({
+    index: i, question: q.q, options: q.opts, correctIndex: q.correct
+  }));
+
+  const roomData = {
+    code, cls, subject: subj,
+    timer: parseInt(timer), maxPlayers: parseInt(maxP),
+    totalQ: questions.length, questions: qs,
+    phase: 'lobby', currentQIndex: -1, created: Date.now()
+  };
+
+  currentRoomRef = db.ref('quizRooms/' + code);
+  currentRoomRef.set(roomData).then(() => {
+    document.getElementById('roomCodeDisplay').textContent = code;
+    document.getElementById('modalClass').textContent   = cls;
+    document.getElementById('modalSubject').textContent = subj;
+    document.getElementById('modalTimer').textContent   = timer;
+    document.getElementById('modalQCount').textContent  = questions.length;
+    document.getElementById('modalOverlay').classList.add('show');
+    listenForPlayers(code);
+  }).catch(err => alert('Firebase error: ' + err.message));
+}
+
+function listenForPlayers(code) {
+  db.ref('quizRooms/' + code + '/players').on('value', snap => {
+    const players = snap.exists() ? snap.val() : {};
+    const count = Object.keys(players).length;
+
+    document.getElementById('cpPlayerCount').textContent = count;
+    const list = document.getElementById('cpPlayersList');
+    if (count === 0) {
+      list.innerHTML = '<div style="font-size:13px;color:#2a4a2a;">Waiting for players to join...</div>';
+    } else {
+      list.innerHTML = Object.values(players).map((p,i) => `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(0,0,0,0.2);border-radius:8px;border:1px solid #1e4a1e;">
+          <span style="font-family:'Bangers',cursive;font-size:16px;color:#f5c518;min-width:24px;">${i+1}</span>
+          <span style="font-weight:700;font-size:14px;flex:1;">${p.name}</span>
+          <span style="font-size:12px;color:#2ecc71;">✅ Joined</span>
+        </div>
+      `).join('');
+    }
+
+    // Live scores
+    const ls = document.getElementById('liveScores');
+    if (ls && count > 0) {
+      const sorted = Object.values(players).sort((a,b)=>(b.score||0)-(a.score||0));
+      ls.innerHTML = sorted.map((p,i) => `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(0,0,0,0.2);border-radius:8px;">
+          <span style="font-family:'Bangers',cursive;font-size:16px;color:#f5c518;min-width:24px;">${i+1}</span>
+          <span style="font-weight:700;font-size:14px;flex:1;">${p.name}</span>
+          <span style="font-family:'Bangers',cursive;font-size:18px;color:#2ecc71;">${p.score||0}</span>
+        </div>
+      `).join('');
+    }
+  });
+}
+
+function startGame() {
+  if (!currentRoomRef) { alert('Create a room first!'); return; }
+
+  const sb = document.getElementById('startBtn');
+  if (sb) { sb.textContent = '⏳ Starting...'; sb.disabled = true; sb.style.opacity = '0.6'; }
+
+  currentRoomRef.once('value').then(snap => {
+    const room = snap.val();
+    if (!room) { alert('Room not found!'); return; }
+    const qs = room.questions;
+    currentRoomRef.child('phase').set('playing');
+
+    document.getElementById('modalOverlay').classList.remove('show');
+    const cp = document.getElementById('controlPanel');
+    cp.style.display = 'block';
+    const code = document.getElementById('roomCodeDisplay').textContent;
+    document.getElementById('cpRoomCode').textContent  = code;
+    document.getElementById('cpClass').textContent     = '📚 ' + document.getElementById('modalClass').textContent;
+    document.getElementById('cpSubject').textContent   = '📖 ' + document.getElementById('modalSubject').textContent;
+    document.getElementById('cpTimer').textContent     = '⏱ ' + document.getElementById('modalTimer').textContent + 's';
+    document.getElementById('cpQCount').textContent    = '❓ ' + document.getElementById('modalQCount').textContent + ' Qs';
+    document.getElementById('qProgressWrap').style.display = 'block';
+    document.getElementById('gameStatus').textContent = '🎮 Game running... Q 1/' + qs.length;
+
+    if (sb) sb.textContent = '✅ GAME RUNNING';
+
+    sendQuestion(0, qs, room.timer);
+  });
+}
+
+function sendQuestion(index, qs, timer) {
+  if (index >= qs.length) {
+    // Game finished — show results after 2s delay
+    currentRoomRef.child('phase').set('finished');
+    document.getElementById('gameStatus').textContent = '🏆 Game finished! Loading results...';
+    const sb = document.getElementById('startBtn');
+    if (sb) sb.textContent = '✅ GAME FINISHED';
+
+    setTimeout(() => {
+      // Read final players data and show results screen
+      currentRoomRef.child('players').once('value').then(snap => {
+        const players = snap.exists() ? snap.val() : {};
+        showGameOver(players);
+      });
+      // Auto-delete room after 60s
+      setTimeout(() => { if (currentRoomRef) currentRoomRef.remove(); }, 60000);
+    }, 2000);
+    return;
+  }
+
+  document.getElementById('gameStatus').textContent = '🎮 Game running... Q ' + (index+1) + '/' + qs.length;
+  const q = qs[index];
+  currentRoomRef.child('currentQuestion').set({
+    index, total: qs.length, timer,
+    question: q.question, options: q.options, correctIndex: q.correctIndex
+  });
+  currentRoomRef.child('answers').remove();
+  setTimeout(() => sendQuestion(index + 1, qs, timer), (timer + 3) * 1000);
+}
+
+// ══════════════════════════════════════
+//  SHOW GAME OVER SCREEN
+// ══════════════════════════════════════
+function showGameOver(playersObj) {
+  const players = Object.values(playersObj || {});
+
+  // Sort by score descending
+  players.sort((a, b) => (b.score || 0) - (a.score || 0));
+
+  const champion = players[0] || { name: 'Nobody', score: 0 };
+
+  // Set champion info
+  document.getElementById('goChampName').textContent = champion.name;
+  document.getElementById('goChampPts').textContent  = champion.score || 0;
+
+  // Build leaderboard (show all, highlight top 3)
+  const medals = ['🥇','🥈','🥉'];
+  const rankClasses = ['r1','r2','r3'];
+
+  const lb = document.getElementById('goLeaderboard');
+  lb.innerHTML = players.map((p, i) => {
+    const rankClass = i < 3 ? rankClasses[i] : 'rx';
+    const medal     = i < 3 ? medals[i] : '';
+    const rankLabel = i + 1;
+    return `
+      <div class="lb-row">
+        <div class="lb-rank ${rankClass}">${rankLabel}</div>
+        <span class="lb-medal-emoji">${medal}</span>
+        <span class="lb-name">${p.name || '—'}</span>
+        <div>
+          <span class="lb-score">${p.score || 0}</span>
+          <span class="lb-score-label">pts</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Hide control panel, show game over screen
+  document.getElementById('controlPanel').style.display = 'none';
+  document.getElementById('gameOverScreen').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+  const cp = document.getElementById('controlPanel');
+  cp.style.display = 'block';
+  const code = document.getElementById('roomCodeDisplay').textContent;
+  document.getElementById('cpRoomCode').textContent   = code;
+  document.getElementById('cpClass').textContent      = '📚 ' + document.getElementById('modalClass').textContent;
+  document.getElementById('cpSubject').textContent    = '📖 ' + document.getElementById('modalSubject').textContent;
+  document.getElementById('cpTimer').textContent      = '⏱ ' + document.getElementById('modalTimer').textContent + 's';
+  document.getElementById('cpQCount').textContent     = '❓ ' + document.getElementById('modalQCount').textContent + ' Qs';
+}
+
+function copyCode() {
+  const code = document.getElementById('roomCodeDisplay').textContent;
+  navigator.clipboard.writeText(code).then(() => showToast('Code copied!'));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+addQuestion();
+</script>
+</body>
+</html>
