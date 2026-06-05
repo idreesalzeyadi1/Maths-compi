@@ -111,6 +111,7 @@ input:focus{border-color:var(--green);background:rgba(13,40,13,0.9);}
 .result-banner.correct{color:#4caf50;text-shadow:0 0 15px rgba(76,175,80,0.6);}
 .result-banner.wrong{color:#e74c3c;text-shadow:0 0 15px rgba(244,67,54,0.5);}
 .result-banner.timeout{color:#888;}
+.result-banner.other{color:#FFD600;text-shadow:0 0 15px rgba(255,214,0,0.5);font-size:18px;}
 
 /* ── RESULTS ── */
 #resultsScreen{background:radial-gradient(ellipse at center,#0d3a0d 0%,#050f05 100%);}
@@ -254,24 +255,42 @@ function joinRoom(){
 
   if(!name){ err.textContent = "Enter your name!"; return; }
   if(code.length < 4){ err.textContent = "Enter the 4-digit room code!"; return; }
-  err.textContent = "Checking room...";
 
-  db.ref('quizRooms/' + code).once('value').then(snap => {
-    if(!snap.exists()){ err.textContent = "Room not found! Check the code."; return; }
+  // Disable button to prevent double-tap
+  const joinBtn = document.querySelector('.btn-gold');
+  if(joinBtn) joinBtn.disabled = true;
+  err.textContent = "Joining...";
+
+  P.name = name;
+  P.roomCode = code;
+  P.playerId = 'p_' + Date.now();
+  roomRef = db.ref('quizRooms/' + code);
+
+  // Single read — validate + register in one shot
+  roomRef.once('value').then(snap => {
+    if(!snap.exists()){
+      err.textContent = "Room not found! Check the code.";
+      if(joinBtn) joinBtn.disabled = false;
+      return;
+    }
     const room = snap.val();
-    if(room.phase === 'playing'){ err.textContent = "Game already started!"; return; }
-    if(room.phase === 'finished'){ err.textContent = "This game has ended."; return; }
+    if(room.phase === 'playing'){
+      err.textContent = "Game already started!";
+      if(joinBtn) joinBtn.disabled = false;
+      return;
+    }
+    if(room.phase === 'finished'){
+      err.textContent = "This game has ended.";
+      if(joinBtn) joinBtn.disabled = false;
+      return;
+    }
 
-    P.name = name;
-    P.roomCode = code;
-    P.playerId = 'p_' + Date.now();
-    roomRef = db.ref('quizRooms/' + code);
+    // Register player + onDisconnect in parallel (no await)
+    const playerRef = roomRef.child('players/' + P.playerId);
+    playerRef.set({ name: P.name, score: 0, joined: Date.now() });
+    playerRef.onDisconnect().remove();
 
-    // Register player
-    roomRef.child('players/' + P.playerId).set({ name: P.name, score: 0, joined: Date.now() });
-    roomRef.child('players/' + P.playerId).onDisconnect().remove();
-
-    // Update UI
+    // Update UI immediately from cached room data
     document.getElementById('waitRoomCode').textContent = code;
     document.getElementById('waitPlayerName').textContent = '👤 ' + name;
     document.getElementById('waitClass').textContent   = '📚 ' + (room.cls || '—');
@@ -282,10 +301,15 @@ function joinRoom(){
     document.getElementById('subjectTag').textContent = room.subject || 'Quiz';
     totalQ = room.totalQ || 0;
 
+    // Show waiting screen right away
     showScreen('waitScreen');
     listenToRoom();
     err.textContent = "";
-  }).catch(() => { err.textContent = "Connection error. Try again."; });
+    if(joinBtn) joinBtn.disabled = false;
+  }).catch(() => {
+    err.textContent = "Connection error. Try again.";
+    if(joinBtn) joinBtn.disabled = false;
+  });
 }
 
 // ── LISTEN TO ROOM ──
@@ -310,11 +334,39 @@ function listenToRoom(){
     if(phase === 'finished') endGame();
   });
 
-  // Current question
+  // Current question — only reload if question index actually changed
+  let _lastQIndex = -1;
   roomRef.child('currentQuestion').on('value', snap => {
     if(!snap.exists()) return;
     const qData = snap.val();
-    if(qData) loadQuestion(qData);
+    if(!qData) return;
+    if(qData.index === _lastQIndex) return; // same question, ignore
+    _lastQIndex = qData.index;
+    loadQuestion(qData);
+  });
+
+  // Round winner — someone answered correctly first (or timeout)
+  roomRef.child('roundWinner').on('value', snap => {
+    if(!snap.exists()) return;
+    const w = snap.val();
+    if(!w) return;
+
+    // Stop local timer
+    clearInterval(timerInterval);
+
+    // Lock all buttons
+    document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+
+    if(w.timeout) {
+      // Nobody answered correctly
+      showBanner('⏱ TIME UP! No correct answer', 'timeout');
+    } else if(w.name === P.name) {
+      // This player won the round
+      showBanner('🏆 YOU GOT IT FIRST! +1', 'correct');
+    } else {
+      // Someone else won
+      showBanner('⚡ ' + w.name + ' answered correctly first!', 'other');
+    }
   });
 }
 
@@ -347,7 +399,7 @@ function loadQuestion(qData){
     const btn = document.createElement('button');
     btn.className = 'opt-btn';
     btn.innerHTML = `<span class="opt-label">${labels[i]}</span>${opt}`;
-    btn.onclick = () => submitAnswer(i, qData.correctIndex, qData.options, btn);
+    btn.onclick = () => submitAnswer(i, qData.correctIndex, qData.options, btn, qData);
     grid.appendChild(btn);
   });
 
@@ -360,7 +412,11 @@ function loadQuestion(qData){
     updateTimerUI(currentTimer, maxTime);
     if(currentTimer <= 0){
       clearInterval(timerInterval);
-      if(!P.answered) timeOut(qData.correctIndex, qData.options);
+      if(!P.answered) {
+        P.answered = true;
+        document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+        // Just lock UI — admin will send roundWinner(timeout) signal
+      }
     }
   }, 1000);
 }
@@ -377,7 +433,7 @@ function updateTimerUI(val, max){
 }
 
 // ── SUBMIT ANSWER ──
-function submitAnswer(chosen, correct, options, btn){
+function submitAnswer(chosen, correct, options, btn, qData){
   if(P.answered) return;
   P.answered = true;
   clearInterval(timerInterval);
@@ -386,35 +442,25 @@ function submitAnswer(chosen, correct, options, btn){
   btns.forEach(b => b.disabled = true);
 
   const isCorrect = chosen === correct;
+
+  // Highlight chosen option
   if(isCorrect){
-    P.score++;
-    document.getElementById('ghScore').textContent = P.score;
     btn.classList.add('correct');
-    showBanner('✅ CORRECT! +1', 'correct');
+    showBanner('✅ Correct! Waiting...', 'correct');
   } else {
     btn.classList.add('wrong');
     btns[correct].classList.add('correct');
-    showBanner('❌ WRONG!', 'wrong');
+    showBanner('❌ Wrong answer!', 'wrong');
   }
 
-  // Save answer to Firebase
+  // Send answer to Firebase — admin listens for first correct
   roomRef.child('answers/' + P.playerId).set({
-    name: P.name, chosen, correct: isCorrect,
-    score: P.score, qIndex: P.currentQ - 1, ts: Date.now()
-  });
-  // Update score
-  roomRef.child('players/' + P.playerId + '/score').set(P.score);
-}
-
-function timeOut(correct, options){
-  P.answered = true;
-  const btns = document.querySelectorAll('.opt-btn');
-  btns.forEach(b => b.disabled = true);
-  btns[correct].classList.add('correct');
-  showBanner('⏱ TIME UP!', 'timeout');
-  roomRef.child('answers/' + P.playerId).set({
-    name: P.name, chosen: -1, correct: false,
-    score: P.score, qIndex: P.currentQ - 1, ts: Date.now()
+    name: P.name,
+    chosen,
+    correct: isCorrect,
+    score: P.score,
+    qIndex: P.currentQ - 1,
+    ts: Date.now()
   });
 }
 
@@ -429,36 +475,48 @@ function endGame(){
   clearInterval(timerInterval);
   showScreen('resultsScreen');
 
-  // Get final leaderboard from Firebase
   roomRef.child('players').once('value').then(snap => {
     const players = snap.val() || {};
     const sorted = Object.values(players).sort((a,b) => b.score - a.score);
-    const myScore = P.score;
-    const myRank  = sorted.findIndex(p => p.name === P.name) + 1;
 
-    document.getElementById('yourScore').textContent = myScore;
+    // Assign ranks (tied players get same rank)
+    const rankMap = [];
+    for (let i = 0; i < sorted.length; i++) {
+      if (i > 0 && sorted[i].score === sorted[i-1].score) {
+        rankMap.push(rankMap[i-1]);
+      } else {
+        rankMap.push(i + 1);
+      }
+    }
+
+    const myIndex = sorted.findIndex(p => p.name === P.name);
+    const myRank  = myIndex >= 0 ? rankMap[myIndex] : sorted.length + 1;
+    const myFinalScore = myIndex >= 0 ? (sorted[myIndex].score || 0) : P.score;
+
+    document.getElementById('yourScore').textContent = myFinalScore;
     document.getElementById('yourScoreSub').textContent = 'out of ' + totalQ + ' questions';
 
-    // Congrats message
-    const msgs = ['CHAMPION! 🎉','GOOD TRY! 💪','WELL DONE! 👏','AMAZING! 🔥','KEEP GOING! 📚'];
-    document.getElementById('congratsMsg').textContent = msgs[Math.min(myRank-1, msgs.length-1)];
+    const msgs = { 1:'🏆 CHAMPION! 🎉', 2:'🔥 AMAZING!', 3:'👏 WELL DONE!' };
+    document.getElementById('congratsMsg').textContent = msgs[myRank] || '💪 GOOD TRY!';
 
-    // Trophy icon
-    if(myRank === 1){ document.getElementById('trophyIcon').textContent = '🥇'; startConfetti(); }
-    else if(myRank === 2) document.getElementById('trophyIcon').textContent = '🥈';
-    else if(myRank === 3) document.getElementById('trophyIcon').textContent = '🥉';
-    else document.getElementById('trophyIcon').textContent = '📊';
+    const medalMap = { 1:'🥇', 2:'🥈', 3:'🥉' };
+    document.getElementById('trophyIcon').textContent = medalMap[myRank] || '📊';
+    if (myRank === 1) startConfetti();
 
-    // Leaderboard
     const lb = document.getElementById('leaderboardList');
     lb.innerHTML = '';
+    const medalEmoji = { 1:'🥇', 2:'🥈', 3:'🥉' };
+    const topScore = sorted[0] ? (sorted[0].score || 0) : 0;
+
     sorted.forEach((p, i) => {
+      const rank  = rankMap[i];
+      const isMe  = p.name === P.name;
+      const isTop = p.score === topScore;
       const row = document.createElement('div');
-      row.className = 'lb-row' + (p.name === P.name ? ' me' : '') + (i === 0 ? ' winner-row' : '');
-      const medals = ['🥇','🥈','🥉'];
+      row.className = 'lb-row' + (isMe ? ' me' : '') + (isTop ? ' winner-row' : '');
       row.innerHTML = `
-        <span class="lb-rank">${medals[i] || (i+1)}</span>
-        <span class="lb-name">${p.name}${p.name === P.name ? ' (You)' : ''}${i===0?' <span class="winner-tag">WINNER</span>':''}</span>
+        <span class="lb-rank">${medalEmoji[rank] || rank}</span>
+        <span class="lb-name">${p.name}${isMe ? ' (You)' : ''}${isTop ? ' <span class="winner-tag">WINNER</span>' : ''}</span>
         <span class="lb-score">${p.score || 0}</span>
       `;
       lb.appendChild(row);
@@ -491,6 +549,8 @@ function startConfetti(){
 // Enter key support
 document.getElementById('codeInput').addEventListener('keyup', e => { if(e.key==='Enter') joinRoom(); });
 document.getElementById('nameInput').addEventListener('keyup', e => { if(e.key==='Enter') document.getElementById('codeInput').focus(); });
+
+
 </script>
 </body>
 </html>
