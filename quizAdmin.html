@@ -328,6 +328,13 @@ select option{background:var(--surface2);}
   font-size:22px;letter-spacing:2px;cursor:pointer;transition:all 0.2s;
 }
 .btn-newroom:hover{background:rgba(255,255,255,0.1);color:var(--text);}
+.btn-print {
+  background:linear-gradient(135deg,#1a5a1a,#2ecc71);color:#fff;padding:14px 28px;
+  border:none;border-radius:12px;font-family:'Bangers',cursive;
+  font-size:20px;letter-spacing:2px;cursor:pointer;
+  box-shadow:0 0 18px rgba(46,204,113,0.25);transition:all 0.2s;
+}
+.btn-print:hover{transform:translateY(-2px);box-shadow:0 0 28px rgba(46,204,113,0.45);}
 
 /* Sparkle animation for top 3 */
 @keyframes sparkle{
@@ -505,7 +512,7 @@ select option{background:var(--surface2);}
         </svg>
       </div>
 
-      <div class="champ-label">🏆 CHAMPION</div>
+      <div class="champ-label" id="goChampLabel">🏆 CHAMPION</div>
       <div class="champ-name" id="goChampName">—</div>
       <div class="champ-pts-wrap">
         <span class="champ-pts" id="goChampPts">0</span>
@@ -526,6 +533,7 @@ select option{background:var(--surface2);}
 
     <div class="go-actions">
       <button class="btn-playagain" onclick="location.reload()">🔄 NEW GAME</button>
+      <button class="btn-print" onclick="printResult()">🖨️ PRINT RESULT</button>
     </div>
 
   </div>
@@ -706,21 +714,23 @@ function startGame() {
   });
 }
 
+let roundTimeout = null;
+
 function sendQuestion(index, qs, timer) {
   if (index >= qs.length) {
-    // Game finished — show results after 2s delay
+    // Game finished
     currentRoomRef.child('phase').set('finished');
+    currentRoomRef.child('currentQuestion').remove();
+    currentRoomRef.child('roundWinner').remove();
     document.getElementById('gameStatus').textContent = '🏆 Game finished! Loading results...';
     const sb = document.getElementById('startBtn');
     if (sb) sb.textContent = '✅ GAME FINISHED';
 
     setTimeout(() => {
-      // Read final players data and show results screen
       currentRoomRef.child('players').once('value').then(snap => {
         const players = snap.exists() ? snap.val() : {};
         showGameOver(players);
       });
-      // Auto-delete room after 60s
       setTimeout(() => { if (currentRoomRef) currentRoomRef.remove(); }, 60000);
     }, 2000);
     return;
@@ -728,41 +738,118 @@ function sendQuestion(index, qs, timer) {
 
   document.getElementById('gameStatus').textContent = '🎮 Game running... Q ' + (index+1) + '/' + qs.length;
   const q = qs[index];
+
+  // Clear previous round winner
+  currentRoomRef.child('roundWinner').remove();
+  currentRoomRef.child('answers').remove();
+
   currentRoomRef.child('currentQuestion').set({
     index, total: qs.length, timer,
-    question: q.question, options: q.options, correctIndex: q.correctIndex
+    question: q.question, options: q.options, correctIndex: q.correctIndex,
+    startedAt: Date.now()
   });
-  currentRoomRef.child('answers').remove();
-  setTimeout(() => sendQuestion(index + 1, qs, timer), (timer + 3) * 1000);
+
+  // Clear previous answer listener
+  currentRoomRef.child('answers').off();
+
+  // Listen for first correct answer
+  let roundDone = false;
+
+  const answersRef = currentRoomRef.child('answers');
+  answersRef.on('child_added', snap => {
+    if (roundDone) return;
+    const ans = snap.val();
+    if (ans && ans.correct === true) {
+      roundDone = true;
+      clearTimeout(roundTimeout);
+      answersRef.off(); // stop listening
+
+      // Set round winner — players will see this
+      currentRoomRef.child('roundWinner').set({
+        name: ans.name,
+        qIndex: index
+      });
+
+      // Update winner score
+      currentRoomRef.child('players').orderByChild('name').equalTo(ans.name)
+        .once('value').then(s => {
+          s.forEach(child => {
+            const cur = child.val().score || 0;
+            child.ref.update({ score: cur + 1 });
+          });
+        });
+
+      // Next question after 3s
+      roundTimeout = setTimeout(() => sendQuestion(index + 1, qs, timer), 3500);
+    }
+  });
+
+  // Timer runs out — no correct answer → next question
+  roundTimeout = setTimeout(() => {
+    if (roundDone) return;
+    roundDone = true;
+    answersRef.off();
+
+    // Signal timeout to players
+    currentRoomRef.child('roundWinner').set({
+      name: null,
+      qIndex: index,
+      timeout: true
+    });
+
+    setTimeout(() => sendQuestion(index + 1, qs, timer), 3000);
+  }, (timer + 1) * 1000);
 }
 
 // ══════════════════════════════════════
 //  SHOW GAME OVER SCREEN
 // ══════════════════════════════════════
+// Store for print
+let _gameResultData = { players: [], cls: '', subject: '', totalQ: 0, roomCode: '' };
+
 function showGameOver(playersObj) {
   const players = Object.values(playersObj || {});
-
-  // Sort by score descending
   players.sort((a, b) => (b.score || 0) - (a.score || 0));
 
-  const champion = players[0] || { name: 'Nobody', score: 0 };
+  // ── Assign ranks (tied players get same rank) ──
+  let rankMap = [];
+  let currentRank = 1;
+  for (let i = 0; i < players.length; i++) {
+    if (i > 0 && players[i].score === players[i-1].score) {
+      rankMap.push(rankMap[i-1]); // same rank as previous
+    } else {
+      currentRank = i + 1;
+      rankMap.push(currentRank);
+    }
+  }
 
-  // Set champion info
-  document.getElementById('goChampName').textContent = champion.name;
-  document.getElementById('goChampPts').textContent  = champion.score || 0;
+  // Champion = all players sharing rank 1
+  const topScore = players[0] ? (players[0].score || 0) : 0;
+  const champions = players.filter(p => (p.score || 0) === topScore);
+  const champNames = champions.map(p => p.name).join(' & ');
+  document.getElementById('goChampName').textContent = champNames || '—';
+  document.getElementById('goChampPts').textContent  = topScore;
+  document.getElementById('goChampLabel').textContent = champions.length > 1 ? '🏆 JOINT CHAMPIONS' : '🏆 CHAMPION';
 
-  // Build leaderboard (show all, highlight top 3)
-  const medals = ['🥇','🥈','🥉'];
-  const rankClasses = ['r1','r2','r3'];
+  // Save for print
+  _gameResultData.players  = players.map((p, i) => ({ ...p, rank: rankMap[i] }));
+  _gameResultData.cls      = document.getElementById('modalClass').textContent;
+  _gameResultData.subject  = document.getElementById('modalSubject').textContent;
+  _gameResultData.totalQ   = parseInt(document.getElementById('modalQCount').textContent) || 0;
+  _gameResultData.roomCode = document.getElementById('roomCodeDisplay').textContent;
+
+  // ── Build leaderboard with tied ranks ──
+  const rankClasses = { 1:'r1', 2:'r2', 3:'r3' };
+  const medals      = { 1:'🥇', 2:'🥈', 3:'🥉' };
 
   const lb = document.getElementById('goLeaderboard');
   lb.innerHTML = players.map((p, i) => {
-    const rankClass = i < 3 ? rankClasses[i] : 'rx';
-    const medal     = i < 3 ? medals[i] : '';
-    const rankLabel = i + 1;
+    const rank      = rankMap[i];
+    const rankClass = rankClasses[rank] || 'rx';
+    const medal     = medals[rank] || '';
     return `
       <div class="lb-row">
-        <div class="lb-rank ${rankClass}">${rankLabel}</div>
+        <div class="lb-rank ${rankClass}">${rank}</div>
         <span class="lb-medal-emoji">${medal}</span>
         <span class="lb-name">${p.name || '—'}</span>
         <div>
@@ -777,6 +864,145 @@ function showGameOver(playersObj) {
   document.getElementById('controlPanel').style.display = 'none';
   document.getElementById('gameOverScreen').style.display = 'block';
   window.scrollTo(0, 0);
+}
+
+// ── PRINT RESULT (opens styled print window) ──
+function printResult() {
+  const { players, cls, subject, totalQ, roomCode } = _gameResultData;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-PK', { day:'2-digit', month:'long', year:'numeric' });
+  const timeStr = now.toLocaleTimeString('en-PK', { hour:'2-digit', minute:'2-digit' });
+
+  const medalEmoji = { 1:'🥇', 2:'🥈', 3:'🥉' };
+  const rankLabel  = { 1:'1st', 2:'2nd', 3:'3rd' };
+
+  const rows = players.map((p, i) => {
+    const rank  = p.rank;
+    const medal = medalEmoji[rank] || '';
+    const rlbl  = rankLabel[rank] || rank + 'th';
+    const bg    = rank === 1 ? '#fffbe6' : rank === 2 ? '#f5f5f5' : rank === 3 ? '#fff3e0' : '#ffffff';
+    const rankColor = rank === 1 ? '#b8860b' : rank === 2 ? '#666' : rank === 3 ? '#a0522d' : '#333';
+    return `
+      <tr style="background:${bg};">
+        <td style="padding:10px 14px;font-size:15px;font-weight:800;color:${rankColor};text-align:center;">${medal} ${rlbl}</td>
+        <td style="padding:10px 14px;font-size:15px;font-weight:700;color:#1a1a1a;">${p.name || '—'}</td>
+        <td style="padding:10px 14px;font-size:16px;font-weight:800;color:#1a7a1a;text-align:center;">${p.score || 0}</td>
+        <td style="padding:10px 14px;font-size:13px;color:#555;text-align:center;">${totalQ > 0 ? Math.round(((p.score||0)/totalQ)*100) + '%' : '—'}</td>
+      </tr>`;
+  }).join('');
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<title>Quiz Result — ${subject}</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Nunito',sans-serif;background:#fff;color:#1a1a1a;padding:0;}
+  .page{max-width:720px;margin:0 auto;padding:36px 40px 48px;}
+
+  /* Header */
+  .header{display:flex;align-items:center;gap:18px;padding-bottom:20px;border-bottom:3px solid #1a7a1a;margin-bottom:6px;}
+  .logo-circle{width:72px;height:72px;border-radius:50%;border:3px solid #1a7a1a;overflow:hidden;flex-shrink:0;background:#f5f5f5;}
+  .logo-circle img{width:100%;height:100%;object-fit:cover;}
+  .school-info{flex:1;}
+  .school-name{font-family:'Playfair Display',serif;font-size:22px;font-weight:800;color:#0a4a0a;letter-spacing:0.5px;line-height:1.2;}
+  .school-sub{font-size:11px;color:#4a7a4a;letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+
+  /* Result title banner */
+  .result-banner{background:linear-gradient(135deg,#0a4a0a,#1a7a1a);color:#fff;text-align:center;padding:14px 20px;border-radius:10px;margin:20px 0 14px;}
+  .result-banner h1{font-family:'Playfair Display',serif;font-size:26px;font-weight:800;letter-spacing:2px;margin-bottom:2px;}
+  .result-banner p{font-size:12px;opacity:0.8;letter-spacing:1px;}
+
+  /* Meta info pills */
+  .meta-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px;justify-content:center;}
+  .meta-pill{background:#f0faf0;border:1px solid #b8ddb8;border-radius:20px;padding:5px 16px;font-size:12px;font-weight:700;color:#1a5a1a;}
+
+  /* Table */
+  table{width:100%;border-collapse:collapse;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);}
+  thead tr{background:linear-gradient(135deg,#0a4a0a,#1a7a1a);}
+  thead th{padding:12px 14px;font-size:12px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px;}
+  thead th:first-child{text-align:center;}
+  thead th:last-child{text-align:center;}
+  tbody tr{border-bottom:1px solid #e8f5e9;}
+  tbody tr:last-child{border-bottom:none;}
+
+  /* Footer */
+  .footer{margin-top:30px;text-align:center;font-size:11px;color:#888;border-top:1px solid #e0e0e0;padding-top:14px;}
+  .footer strong{color:#1a5a1a;}
+
+  /* Decorative corner accent */
+  .corner-accent{position:fixed;top:0;right:0;width:120px;height:120px;background:linear-gradient(225deg,rgba(26,122,26,0.08),transparent);pointer-events:none;}
+
+  @media print{
+    body{padding:0;}
+    .page{padding:24px 30px;}
+    .no-print{display:none;}
+  }
+</style>
+</head>
+<body>
+<div class="corner-accent"></div>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-circle">
+      <img src="loho.jpg" onerror="this.style.display='none'" alt="MCS"/>
+    </div>
+    <div class="school-info">
+      <div class="school-name">The Muslim Collegiate School</div>
+      <div class="school-sub">Quiz Battle — Official Result Sheet</div>
+    </div>
+    <div style="text-align:right;font-size:11px;color:#888;flex-shrink:0;">
+      <div style="font-weight:700;color:#333;">${dateStr}</div>
+      <div>${timeStr}</div>
+      <div style="margin-top:4px;background:#f0faf0;border:1px solid #b8ddb8;border-radius:10px;padding:2px 10px;font-size:10px;color:#1a5a1a;font-weight:700;">Room: ${roomCode}</div>
+    </div>
+  </div>
+
+  <!-- Result banner -->
+  <div class="result-banner">
+    <h1>📋 QUIZ RESULT</h1>
+    <p>Final standings &amp; scores</p>
+  </div>
+
+  <!-- Meta pills -->
+  <div class="meta-row">
+    <span class="meta-pill">📚 ${cls || '—'}</span>
+    <span class="meta-pill">📖 ${subject || '—'}</span>
+    <span class="meta-pill">❓ ${totalQ} Questions</span>
+    <span class="meta-pill">👥 ${players.length} Students</span>
+  </div>
+
+  <!-- Table -->
+  <table>
+    <thead>
+      <tr>
+        <th style="text-align:center;">Rank</th>
+        <th>Student Name</th>
+        <th style="text-align:center;">Score</th>
+        <th style="text-align:center;">Accuracy</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>Generated by <strong>Quiz Battle</strong> — The Muslim Collegiate School &nbsp;|&nbsp; ${dateStr}</p>
+    <p style="margin-top:4px;">This is an auto-generated result sheet. For queries contact the teacher.</p>
+  </div>
+
+  <div class="no-print" style="text-align:center;margin-top:24px;">
+    <button onclick="window.print()" style="background:#1a7a1a;color:#fff;border:none;padding:12px 32px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;">🖨️ Print / Save as PDF</button>
+  </div>
+</div>
+</body>
+</html>`);
+  win.document.close();
 }
 
 function closeModal() {
